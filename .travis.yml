@@ -12,5 +12,6 @@ python:
 install: "pip install -r requirements.txt"
 # command to run tests
 script: nosetests
+#integration with Slack
 notifications:
   slack: nodcode:1vNMEjQnaHr57PaMxnYkj9lw
