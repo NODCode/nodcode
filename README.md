@@ -2,8 +2,8 @@ NODCODE
 
 File structure:
 
-front/
-tornado/
-redis/
-rabbit/
-mongodb/
+- front/
+- tornado/
+- redis/
+- rabbit/
+- mongodb/
