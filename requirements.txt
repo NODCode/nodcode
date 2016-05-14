@@ -1,1 +1,2 @@
-tornado
+tornado == 4.3
+pika == 0.10.0
