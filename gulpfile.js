@@ -1,9 +1,8 @@
 var gulp = require('gulp'),
     watch = require('gulp-watch'),
     autoprefixer = require('gulp-autoprefixer'),
-    //concat = require('gulp-concat'),
-    //sourcemaps = require('gulp-sourcemaps'),
     source = require('vinyl-source-stream'),
+    concat = require('gulp-concat'),
     browserSync = require("browser-sync"),
     cssmin = require('gulp-cssmin'),
     browserify = require('browserify'),
@@ -107,18 +106,18 @@ gulp.task('libs:build', function(){
     
 
 
-    gulp.src(path.src.nm+'angular/angular.min.js'
+    gulp.src([path.src.nm+'angular/angular.min.js',
             // path.src.bc+'angular-animate/angular-animate.min.js',
             // path.src.bc+'angular-aria/angular-aria.min.js',
             // path.src.bc+'angular-messages/angular-messages.min.js',
             // path.src.bc+'angular-mocks/angular-mocks.min.js',
             // path.src.bc+'angular-moment/**/*.*',
-            // path.src.bc+'angular-ui-router/release/angular-ui-router.min.js',
-            // path.src.bc+'angular-ui-router/release/angular-ui-notification.min.js',
+             path.src.nm+'angular-ui-router/release/angular-ui-router.min.js',
+             path.src.nm+'angular-ui-router/release/angular-ui-notification.min.js'
             // path.src.bc+'ng-file-upload/ng-file-upload.min.js',
             // path.src.bc+'ng-file-upload/ng-file-upload-shim.min.js'
-          )
-      // .pipe(concat('angular.concat.js'))
+          ])
+      .pipe(concat('angular.concat.js'))
       .pipe(gulp.dest(path.build.libs+'angular/'));
 });
 
