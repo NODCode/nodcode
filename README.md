@@ -2,7 +2,7 @@ NODCODE
 
 File structure:
 
-- front/
+- client/
 - tornado/
 - redis/
 - rabbit/

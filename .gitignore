@@ -1,0 +1,7 @@
+node_modules/
+.idea/
+.tmp/
+dist/
+client/build/
+/npm-debug.log
+.brackets.json
