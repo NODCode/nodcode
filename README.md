@@ -18,31 +18,31 @@ For commands you maybe will need sudo
 
 	Useful links for installing:
 
-	https://nodejs.org/en/download/
+		https://nodejs.org/en/download/
 
-	https://nodejs.org/en/download/package-manager/
+		https://nodejs.org/en/download/package-manager/
 
 	check version after installing, command:
 
-	node --version
+		node --version
 
 2. install gulp global
 
 	command:
 
-	npm install --global gulp-cli
+		npm install --global gulp-cli
 
 	useful link:
 
-	https://github.com/gulpjs/gulp/blob/master/docs/getting-started.md
+		https://github.com/gulpjs/gulp/blob/master/docs/getting-started.md
 
 3. run command:
 
-	npm install
+		npm install
 
 4. run command:
 
-	gulp
+		gulp
 
 IT'S READY, if you will have some problem, call me))
  
