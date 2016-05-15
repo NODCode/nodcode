@@ -1,8 +1,6 @@
 ##-------------------Requirements---------------------------
-
 ##   1. Download RabbitMQ from: 
 ##    http://www.rabbitmq.com/releases/rabbitmq-server/v3.6.1/rabbitmq-server_3.6.1-1_all.deb
-
 
 #-----------------------Script-------------------------------
 
