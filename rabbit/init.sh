@@ -13,6 +13,8 @@ sudo rabbitmqctl -n hare stop_app
 sudo rabbitmqctl -n hare2 stop_app
 sudo rabbitmqctl -n hare join_cluster rabbit@`hostname -s`
 sudo rabbitmqctl -n hare2 join_cluster rabbit@`hostname -s`
+sudo rabbitmqctl -n hare start_app
+sudo rabbitmqctl -n hare2 start_app
 sudo rabbitmqctl set_policy ha-all "." '{"ha-mode":"all", "ha-sync-mode":"automatic"}'
 sudo rabbitmqctl cluster_status
 
