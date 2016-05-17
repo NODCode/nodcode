@@ -4,6 +4,7 @@
 
 #-----------------------Script-------------------------------
 
+sudo rabbitmq-plugins rabbitmq_management enable
 sudo service rabbitmq-server start
 sudo rabbitmqctl start_app
 sudo RABBITMQ_NODE_PORT=5672 RABBITMQ_SERVER_START_ARGS="-rabbitmq_management listener [{port,15672}]" RABBITMQ_NODENAME=rabbit rabbitmq-server -detached
