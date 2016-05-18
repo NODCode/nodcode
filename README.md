@@ -8,3 +8,5 @@ File structure:
 - rabbit/
 - mongodb/
 - bl/
+
+Requirement for Docker: version >= 1.10 
