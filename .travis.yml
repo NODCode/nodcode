@@ -5,7 +5,9 @@ python:
 # command to install dependencies
 install: "pip install -r requirements.txt"
 # command to run tests
-script: nosetests
+script:
+    - find . -name '*.py' -exec pep8 {} \;
+    - nosetests
 #integration with Slack
 notifications:
   slack: nodcode:1vNMEjQnaHr57PaMxnYkj9lw
