@@ -4,11 +4,11 @@ python:
   - "3.5"
 # command to install dependencies
 install:
-    - pip install pep8 
+    - pip install flake8 
     - pip install -r requirements.txt
 # command to run tests
 script:
-    - find . -name '*.py' -exec pep8 {} \;
+    - flake8 .
     - nosetests
 #integration with Slack
 notifications:
