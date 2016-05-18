@@ -1,6 +1,7 @@
 	mkdir rabbit
 	cd rabbit
-	git clone https://github.com/bijukunjummen/docker-rabbitmq-cluster.git
+	git clone https://github.com/harbur/docker-rabbitmq-cluster.git
+	cd docker-rabbitmq-cluster
 	docker build -t harbur/rabbitmq-cluster .
 
 to run the cluster: 
