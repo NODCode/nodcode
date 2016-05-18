@@ -6,4 +6,5 @@ client/build/
 /npm-debug.log
 .brackets.json
 
+/venv
 *.pyc
