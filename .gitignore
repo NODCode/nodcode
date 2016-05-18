@@ -5,3 +5,5 @@ dist/
 client/build/
 /npm-debug.log
 .brackets.json
+
+*.pyc
