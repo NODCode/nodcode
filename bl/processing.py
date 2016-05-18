@@ -2,20 +2,20 @@ import pika
 import json
 import pymongo
 
-#pika settings
+# pika settings
 connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
 channel = connection.channel()
 
 channel.queue_declare(queue="creation", durable=True)
 channel.queue_declare(queue="reading", durable=True)
 
-###TEST
+# TEST
 channel.queue_declare(queue="answer", durable=True)
-###TEST
+# TEST
 
-channel.basic_qos(prefetch_count=1) ### count messages to a worker at a time
+channel.basic_qos(prefetch_count=1)  # count messages to a worker at a time
 
-#pymongo settings
+# pymongo settings
 client = pymongo.MongoClient("172.17.0.3", 27017)
 db = client["local"]["test"]
 
@@ -66,12 +66,13 @@ def callback_reading(ch, method, properties, body):
 channel.basic_consume(callback_creation, queue="creation")
 channel.basic_consume(callback_reading, queue="reading")
 
-###TEST
+
+# TEST
 def callback_test(ch, method, properties, body):
     body = json.loads(body)
     print(" [x] Received %r" % body)
     ch.basic_ack(delivery_tag=method.delivery_tag)
 channel.basic_consume(callback_test, queue="answer")
-###TEST
+# TEST
 
 channel.start_consuming()

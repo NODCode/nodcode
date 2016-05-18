@@ -3,6 +3,7 @@ from pika.adapters.tornado_connection import TornadoConnection
 
 # TODO: logging instead print()
 
+
 class PikaClient(object):
 
     def __init__(self):

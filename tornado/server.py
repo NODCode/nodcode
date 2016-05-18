@@ -18,6 +18,7 @@ import redis
 # TODO: get rid of weird 'print'. Use logging for it!
 # import logging
 
+
 class BaseHandler(tornado.web.RequestHandler):
 
     # TODO: use more secure way for that:
@@ -37,8 +38,8 @@ class MainHandler(BaseHandler):
         self.queue_to_logic = 'task_logic'
         self.queue_for_waiting = 'task_rest'
         self.pika_client.channel.queue_declare(queue=self.queue_for_waiting,
-                                 callback=self.on_queue_consume,
-                                 durable=True)
+                                               callback=self.on_queue_consume,
+                                               durable=True)
 
     @tornado.web.asynchronous
     def get(self):
