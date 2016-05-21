@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-import platform
-import os
+# import platform
+# import os
 import sys
 import time
-import uuid
+import json
+# import uuid
 
 import pika
 import tornado.ioloop
 import tornado.web
 
-from pika.adapters.tornado_connection import TornadoConnection
-from PikaClient import PikaClient
+from server.PikaClient import PikaClient
 
 import redis
 
@@ -90,9 +90,9 @@ class LoginHandler(BaseHandler):
         self.redis_store = redis_store
 
     def get(self):
-        self.write('Need some login here... '
-                   'maybe some login form? '
-                   'How do you think?')
+        # TODO: add "login" fomr here
+        # self.write('Put your name somewhere...')
+        self.render('../client/src/index.html')
 
     def post(self):
         self.set_user('user', self.get_argument('name'))
@@ -102,10 +102,14 @@ class LoginHandler(BaseHandler):
 def main():
     pika_client = PikaClient()
     redis_store = redis.StrictRedis()
+    settings = {
+        'static_path': '../client/src'
+    }
     application = tornado.web.Application(
         [(r'/', MainHandler, dict(redis_store=redis_store,
                                   pika_client=pika_client)),
-         (r'/login', LoginHandler, dict(redis_store=redis_store))]
+         (r'/login', LoginHandler, dict(redis_store=redis_store))],
+        settings
     )
     try:
         port = int(sys.argv[1])

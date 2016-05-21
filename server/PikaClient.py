@@ -1,4 +1,5 @@
 import pika
+import tornado
 from pika.adapters.tornado_connection import TornadoConnection
 
 # TODO: logging instead print()
