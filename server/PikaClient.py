@@ -2,7 +2,7 @@ import pika
 import tornado
 from pika.adapters.tornado_connection import TornadoConnection
 
-# TODO: logging instead print()
+from Logger import Logger
 
 
 class PikaClient(object):
@@ -11,12 +11,13 @@ class PikaClient(object):
         self.connecting = False
         self.connection = None
         self.channel = None
+        self.logger = Logger('pika client').get()
 
     def connect(self):
         if self.connecting:
-            print('Already connecting to RabbitMQ.')
+            self.logger.warning('Already connecting to RabbitMQ.')
             return
-        print("Connecting to RabbitMQ")
+        self.logger.info("Connecting to RabbitMQ")
         self.connecting = True
         params = pika.ConnectionParameters(host='localhost')
         self.connection = TornadoConnection(params,
@@ -28,14 +29,14 @@ class PikaClient(object):
         connection.channel(self.on_channel_open)
 
     def on_channel_open(self, channel):
-        print('Channel Open')
+        self.logger.info('Channel Open')
         self.channel = channel
 
     def on_exchange_declare(self, frame):
-        print("Exchange declared.")
+        self.logger.info("Exchange declared.")
 
     def on_basic_cancel(self, frame):
-        print('Basic Cancel Ok.')
+        self.logger.info('Basic Cancel Ok.')
         self.connection.close()
 
     def on_closed(self, connection):
