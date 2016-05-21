@@ -1,7 +1,10 @@
-<div ng-controller="homePageController">
-What is your name?
-<input type="text" ng-model="username"></input>
-<button ng-click="goToMain()">Enter</button>
+<div ng-controller="homePageController" class="common">
+<input type="text" ng-model="username" style= "margin: 0 auto"></input>
+<br>
+<div class="error">{{status}}</div>
+<br>
+<button ng-click="goToMain('messages')">My messages</button>
+<button ng-click="goToMain('leavefor')">Leave message for</button>
 <br>
 
 </div>

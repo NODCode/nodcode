@@ -113,7 +113,8 @@ gulp.task('libs:build', function(){
             // path.src.bc+'angular-mocks/angular-mocks.min.js',
             // path.src.bc+'angular-moment/**/*.*',
              path.src.nm+'angular-ui-router/release/angular-ui-router.min.js',
-             path.src.nm+'angular-ui-router/release/angular-ui-notification.min.js'
+             path.src.nm+'angular-ui-router/release/angular-ui-notification.min.js',
+             path.src.nm+'angular-cookies//angular-cookies.min.js'
             // path.src.bc+'ng-file-upload/ng-file-upload.min.js',
             // path.src.bc+'ng-file-upload/ng-file-upload-shim.min.js'
           ])

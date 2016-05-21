@@ -11,10 +11,15 @@ angular.module('NodeCode')
             controller: 'homePageController'
         })
     
-        .state('main', {
-            url: '/main',
-            templateUrl: 'views/main/main.html',
-            controller: 'mainPageController'
+        .state('messages', {
+            url: '/messages',
+            templateUrl: 'views/messages/messages.html',
+            controller: 'messagesPageController'
+        })
+        .state('leavefor', {
+            url: '/leavefor',
+            templateUrl: 'views/leavefor/leavefor.html',
+            controller: 'leaveforPageController'
         })
     
         

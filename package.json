@@ -10,6 +10,7 @@
   "license": "ISC",
   "devDependencies": {
     "angular": "^1.5.5",
+    "angular-cookies": "^1.5.5",
     "angular-ui-notification": "^0.2.0",
     "angular-ui-router": "^0.2.18",
     "browser-sync": "^2.12.8",
