@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-#import platform
-#import os
+# import platform
+# import os
 import sys
 import time
 import json
-#import uuid
+# import uuid
 
 import pika
 import tornado.ioloop
@@ -109,7 +109,7 @@ def main():
         [(r'/', MainHandler, dict(redis_store=redis_store,
                                   pika_client=pika_client)),
          (r'/login', LoginHandler, dict(redis_store=redis_store))],
-         settings
+        settings
     )
     try:
         port = int(sys.argv[1])
