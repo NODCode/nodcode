@@ -7,6 +7,7 @@ class Logger(object):
     def __init__(self, name):
         self._logger = logging.getLogger(name)
         self._logger.setLevel(logging.DEBUG)
+        self._logger.propagate = False
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s | %(name)s | '
