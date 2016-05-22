@@ -8,9 +8,5 @@ docker run --net mynet123 --ip 172.18.0.13 --name mongo3 -p 27020:27017 -d mongo
 
 mongo --port 27018 --eval 'rs.initiate({_id: "rs001",version: 1,members: [{_id: 0,host: "mongo1:27017"}]})'
 
-mongo --port 27018
-rs.add('172.18.0.12:27017')
-rs.add('172.18.0.13:27017')
-exit
-
-
+mongo --port 27018 --eval 'rs.add("172.18.0.12:27017")'
+mongo --port 27018 --eval 'rs.add("172.18.0.13:27017")'
