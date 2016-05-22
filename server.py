@@ -47,13 +47,13 @@ class MainHandler(BaseHandler):
     @tornado.web.asynchronous
     def post(self):
         self.logger.debug('New POST request incoming')
-        # if not self.get_user():
-        #     error_msg = {
-        #         'status': 400,
-        #         'message': 'Something gone wrong'
-        #     }
-        #     self.write_json(error_msg)
-        #     return
+        if not self.get_user():
+            error_msg = {
+                'status': 400,
+                'message': 'Something gone wrong'
+            }
+            self.write_json(error_msg)
+            return
 
         user_id = self.get_argument('id', default=None)
         message = self.get_argument('message', default=None)
