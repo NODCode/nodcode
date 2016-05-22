@@ -1,7 +1,3 @@
-import json
-import os
-import sys
-
 import pika
 
 import tornado.httpserver
@@ -79,20 +75,20 @@ class PikaClient(object):
                                    callback=self.on_queue_declared)
         self.channel.queue_declare(queue=self.queue_create,
                                    durable=True,
-                                   callback=lambda frame: \
-                                        self.channel.queue_bind(
-                                            exchange='tornado',
-                                            queue=self.queue_create,
-                                            routing_key=self.queue_create,
-                                            callback=None))
+                                   callback=lambda frame:
+                                       self.channel.queue_bind(
+                                           exchange='tornado',
+                                           queue=self.queue_create,
+                                           routing_key=self.queue_create,
+                                           callback=None))
         self.channel.queue_declare(queue=self.queue_read,
                                    durable=True,
-                                   callback=lambda frame: \
-                                        self.channel.queue_bind(
-                                            exchange='tornado',
-                                            queue=self.queue_read,
-                                            routing_key=self.queue_read,
-                                            callback=None))
+                                   callback=lambda frame:
+                                       self.channel.queue_bind(
+                                           exchange='tornado',
+                                           queue=self.queue_read,
+                                           routing_key=self.queue_read,
+                                           callback=None))
 
     def on_queue_declared(self, frame):
         self.logger.debug('Queue Declared, Binding Queue')
@@ -121,8 +117,8 @@ class PikaClient(object):
     def on_pika_message(self, channel, method, header, body):
         self.logger.debug('Message receive: '
                           'body: {body}'.format(method=method,
-                                                  header=header,
-                                                  body=body))
+                                                header=header,
+                                                body=body))
         self.messages.append(body)
         if self.tornado_callback:
             self.tornado_callback(self.get_messages())
