@@ -19,7 +19,7 @@ channel.queue_declare(queue="answer", durable=True)
 channel.basic_qos(prefetch_count=1)  # count messages to a worker at a time
 
 
-#replica connection string
+# replica connection string from mongo_conf.ini
 cfg_parser = ConfigParser.ConfigParser()
 cfg_parser.read('mongo_conf.ini')
 
