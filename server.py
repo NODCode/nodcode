@@ -23,6 +23,13 @@ class BaseHandler(tornado.web.RequestHandler):
     def set_user(self, name):
         self.session_store.set(name)
 
+    def write_json(self, msg):
+        messages = json.dumps(msg)
+        self.logger.debug('Messages for writing: %s' % str(messages))
+        self.set_header("Content-type", "application/json")
+        self.write(messages)
+        self.finish()
+
 
 class MainHandler(BaseHandler):
 
@@ -33,24 +40,12 @@ class MainHandler(BaseHandler):
         self.queue_create = queue_create
 
     @tornado.web.asynchronous
-    def get(self):
-        self.logger.debug('New GET request incoming')
-        if not self.get_user():
-            self.redirect('/login')
-            return
-        self.logger.debug('Index page')
-        # TODO: put correct path
-        # self.render('index_page')
-        self.write('index')
-        self.finish()
-
-    @tornado.web.asynchronous
     def post(self):
         self.logger.debug('New POST request incoming')
         if not self.get_user():
             error_msg = {
                 'status': 400,
-                'message': 'Something gone wrong'
+                'message': 'Something has gone wrong'
             }
             self.write_json(error_msg)
             return
@@ -84,13 +79,6 @@ class MainHandler(BaseHandler):
                                              routing_key=routing,
                                              tornado_callback=self.write_json)
 
-    def write_json(self, msg):
-        messages = json.dumps(msg)
-        self.logger.debug('Messages for writing: %s' % str(messages))
-        self.set_header("Content-type", "application/json")
-        self.write(messages)
-        self.finish()
-
 
 class LoginHandler(BaseHandler):
 
@@ -98,22 +86,15 @@ class LoginHandler(BaseHandler):
         super(LoginHandler, self).initialize(session_store=session_store)
         self.logger = logger
 
-    def get(self):
-        self.logger.debug('Login page')
-        # TODO: put correct path
-        # self.render('login_page')
-        self.write('login')
-        self.finish()
-
     def post(self):
         # TODO: definitly, we should use more secure way, but not today
         self.set_user(self.get_argument('name'))
-        self.logger.debug('Login is passed, redirecting...')
-        self.redirect('/')
+        self.logger.debug('Login is passed')
+        self.write_json({'status': 200,
+                         'response': 'Authorized'})
 
 
 def main():
-    # TODO: Read it from config
     try:
         port = int(sys.argv[1])
     except:
