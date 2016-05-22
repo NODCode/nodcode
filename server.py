@@ -1,125 +1,154 @@
 #!/usr/bin/env python
 
-# import platform
-# import os
 import sys
-import time
 import json
-# import uuid
+import time
 
-import pika
 import tornado.ioloop
 import tornado.web
 
 from server.PikaClient import PikaClient
-
-import redis
-
-# TODO: get rid of weird 'print'. Use logging for it!
-# import logging
+from server.Logger import Logger
+from server.Session import Session
 
 
 class BaseHandler(tornado.web.RequestHandler):
 
-    # TODO: use more secure way for that:
-    # generate uuid and save as hset
+    def initialize(self, session_store):
+        self.session_store = session_store
+
     def get_user(self):
-        self.redis_store.get('user')
+        self.session_store.get()
 
     def set_user(self, name):
-        self.redis_store.set('user', name)
+        self.session_store.set(name)
 
 
 class MainHandler(BaseHandler):
 
-    def initialize(self, redis_store, pika_client):
-        self.redis_store = redis_store
-        self.pika_client = pika_client
-        self.queue_to_logic = 'task_logic'
-        self.queue_for_waiting = 'task_rest'
-        self.pika_client.channel.queue_declare(queue=self.queue_for_waiting,
-                                               callback=self.on_queue_consume,
-                                               durable=True)
+    def initialize(self, session_store, logger, queue_read, queue_create):
+        super(MainHandler, self).initialize(session_store)
+        self.logger = logger
+        self.queue_read = queue_read
+        self.queue_create = queue_create
 
     @tornado.web.asynchronous
     def get(self):
-        user = self.get_user()
+        self.logger.debug('New GET request incoming')
         if not self.get_user():
-            self.redirect("/login")
+            self.redirect('/login')
             return
-        self.write('hello, {user_name}'.format(
-            user_name=tornado.escape.xhtml_escape(user)))
+        self.logger.debug('Index page')
+        # TODO: put correct path
+        # self.render('index_page')
+        self.write('index')
         self.finish()
 
     @tornado.web.asynchronous
     def post(self):
+        self.logger.debug('New POST request incoming')
         if not self.get_user():
-            # TODO: common error json response
+            error_msg = {
+                'status': 400,
+                'message': 'Something gone wrong'
+            }
+            self.write_json(error_msg)
             return
 
-        id = self.get_argument('id')
-        message = self.get_argument('message')
+        user_id = self.get_argument('id', default=None)
+        message = self.get_argument('message', default=None)
 
-        # TODO: parameter error json response
+        if not user_id:
+            # request without user_id is not allowed
+            error_msg = {
+                'status': 400,
+                'message': 'Id was missing'
+            }
+            self.write_json(error_msg)
+            return
+        elif not message:
+            # read a message
+            msg = {
+                'id': user_id
+            }
+            routing = self.queue_read
+        else:
+            # add a message
+            msg = {
+                'id': user_id,
+                'message': message
+            }
+            routing = self.queue_create
 
-        msg = {
-            'id': id,
-            'message': message
-        }
-        self.mq_ch = self.pika_client.channel
-        props = pika.BasicProperties(delivery_mode=1)
-        self.mq_ch.basic_publish(exchange='', routing_key=self.queue_to_logic,
-                                 body=json.dumps(msg), properties=props)
+        self.application.pika.sample_message(msg=json.dumps(msg),
+                                             routing_key=routing,
+                                             tornado_callback=self.write_json)
 
-    def on_queue_consume(self, frame):
-        print('Queue Bound. Issuing Basic Consume.')
-        self.mq_ch.basic_consume(consumer_callback=self.on_response,
-                                 queue=self.queue_for_waiting, no_ack=True)
-
-    def on_response(self, channel, method, header, body):
-        # TODO: correct response handling!
-        self.write('got it: {some_body}'.format(some_body=body))
-        self.flush()
-        # self.finish()
-        # TODO: BUT FINISH TWICE?! HOW TO SOLVE IT?!
+    def write_json(self, msg):
+        messages = json.dumps(msg)
+        self.logger.debug('Messages for writing: %s' % str(messages))
+        self.set_header("Content-type", "application/json")
+        self.write(messages)
+        self.finish()
 
 
 class LoginHandler(BaseHandler):
 
-    def initialize(self, redis_store):
-        self.redis_store = redis_store
+    def initialize(self, session_store, logger):
+        super(LoginHandler, self).initialize(session_store=session_store)
+        self.logger = logger
 
     def get(self):
-        # TODO: add "login" fomr here
-        # self.write('Put your name somewhere...')
-        self.render('../client/src/index.html')
+        self.logger.debug('Login page')
+        # TODO: put correct path
+        # self.render('login_page')
+        self.write('login')
+        self.finish()
 
     def post(self):
-        self.set_user('user', self.get_argument('name'))
+        # TODO: definitly, we should use more secure way, but not today
+        self.set_user(self.get_argument('name'))
+        self.logger.debug('Login is passed, redirecting...')
         self.redirect('/')
 
 
 def main():
-    pika_client = PikaClient()
-    redis_store = redis.StrictRedis()
-    settings = {
-        'static_path': '../client/src'
-    }
-    application = tornado.web.Application(
-        [(r'/', MainHandler, dict(redis_store=redis_store,
-                                  pika_client=pika_client)),
-         (r'/login', LoginHandler, dict(redis_store=redis_store))],
-        settings
-    )
+    # TODO: Read it from config
     try:
         port = int(sys.argv[1])
     except:
         port = 8080
+
+    # queue for waiting answer from rabbit
+    queue_waiting = 'answer'
+
+    # queues for sending create/read messages
+    queue_read = 'reading'
+    queue_create = 'creation'
+
+    logger_web = Logger('tornado-%s' % port).get()
+    session_store = Session()
+    application = tornado.web.Application(
+        [(r'/', MainHandler, dict(session_store=session_store,
+                                  logger=logger_web,
+                                  queue_read=queue_read,
+                                  queue_create=queue_create)),
+         (r'/login', LoginHandler, dict(session_store=session_store,
+                                        logger=logger_web))]
+    )
+
+    logger_pika = Logger('tornado-%s-pika' % port).get()
+    pc = PikaClient(logger=logger_pika,
+                    queue_name=queue_waiting,
+                    queue_read=queue_read,
+                    queue_create=queue_create)
+    application.pika = pc
+
     application.listen(port)
-    print("Tornado is serving on port {0}.".format(port))
+    logger_web.info('Tornado is serving on port {0}.'.format(port))
     ioloop = tornado.ioloop.IOLoop.instance()
-    # TODO: make it after login?
-    ioloop.add_timeout(time.time() + .1, pika_client.connect)
+
+    ioloop.add_timeout(time.time() + .1, pc.connect)
     ioloop.start()
 
 if __name__ == '__main__':
