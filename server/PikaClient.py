@@ -14,11 +14,15 @@ from pika.adapters.tornado_connection import TornadoConnection
 class PikaClient(object):
     tornado_callback = None
 
-    def __init__(self, logger, queue_name):
+    def __init__(self, logger, queue_name, queue_read, queue_create):
         # Construct a queue name we'll use for this instance only
         self.queue_name = queue_name
-        self.logger = logger
 
+        # Create queue for sending
+        self.queue_read = queue_read
+        self.queue_create = queue_create
+
+        self.logger = logger
         self.connected = False
         self.connecting = False
         self.connection = None
@@ -73,6 +77,22 @@ class PikaClient(object):
         self.channel.queue_declare(queue=self.queue_name,
                                    durable=True,
                                    callback=self.on_queue_declared)
+        self.channel.queue_declare(queue=self.queue_create,
+                                   durable=True,
+                                   callback=lambda frame: \
+                                        self.channel.queue_bind(
+                                            exchange='tornado',
+                                            queue=self.queue_create,
+                                            routing_key=self.queue_create,
+                                            callback=None))
+        self.channel.queue_declare(queue=self.queue_read,
+                                   durable=True,
+                                   callback=lambda frame: \
+                                        self.channel.queue_bind(
+                                            exchange='tornado',
+                                            queue=self.queue_read,
+                                            routing_key=self.queue_read,
+                                            callback=None))
 
     def on_queue_declared(self, frame):
         self.logger.debug('Queue Declared, Binding Queue')
@@ -99,9 +119,7 @@ class PikaClient(object):
                                        properties=properties)
 
     def on_pika_message(self, channel, method, header, body):
-        self.logger.debug('Message receive:\n'
-                          'method: {method}\n'
-                          'header: {header}\n'
+        self.logger.debug('Message receive: '
                           'body: {body}'.format(method=method,
                                                   header=header,
                                                   body=body))

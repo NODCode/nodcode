@@ -139,14 +139,16 @@ def main():
     )
 
     logger_pika = Logger('tornado-%s-pika' % port).get()
-    pc = PikaClient(logger_pika, queue_waiting)
+    pc = PikaClient(logger=logger_pika,
+                    queue_name=queue_waiting,
+                    queue_read=queue_read,
+                    queue_create=queue_create)
     application.pika = pc
 
     application.listen(port)
     logger_web.info('Tornado is serving on port {0}.'.format(port))
     ioloop = tornado.ioloop.IOLoop.instance()
 
-    # TODO: make it after login?
     ioloop.add_timeout(time.time() + .1, pc.connect)
     ioloop.start()
 
