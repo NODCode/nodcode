@@ -12,3 +12,7 @@ mongo --port 27018 --eval 'rs.add("172.18.0.12:27017")'
 mongo --port 27018 --eval 'rs.add("172.18.0.13:27017")'
 
 mongo --port 27018 --eval 'db.getMongo().setReadPref("primaryPreferred")'
+
+mongo --port 27018 --eval 'conf = rs.conf(); conf.settings.heartbeatTimeoutSecs = 2; rs.reconfig(conf);'
+mongo --port 27018 --eval 'conf = rs.conf(); conf.settings.heartbeatIntervalMillis = 500; rs.reconfig(conf);'
+mongo --port 27018 --eval 'conf = rs.conf(); conf.settings.electionTimeoutMillis = 2000; rs.reconfig(conf);'
