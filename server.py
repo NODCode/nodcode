@@ -71,7 +71,7 @@ class MainHandler(BaseHandler):
             # add a message
             msg = {
                 'id': user_id,
-                'message': message
+                'content': message
             }
             routing = self.queue_create
 
