@@ -2,7 +2,7 @@ import pika
 import json
 import pymongo
 import ConfigParser
-
+from Logger import Logger
 
 # pika settings
 connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
@@ -12,11 +12,11 @@ channel.exchange_declare(exchange='tornado', type='topic', durable=True)
 channel.queue_declare(queue="creation", durable=True)
 channel.queue_declare(queue="reading", durable=True)
 
-# TEST
-channel.queue_declare(queue="answer", durable=True)
-# TEST
-
 channel.basic_qos(prefetch_count=1)  # count messages to a worker at a time
+
+# logger
+logger_cc = Logger('callback_creation').get()
+logger_cr = Logger('callback_reading').get()
 
 
 # replica connection string from mongo_conf.ini
@@ -36,6 +36,7 @@ db = client["local"]["test"]
 
 def callback_creation(ch, method, properties, body):
     body = json.loads(body)
+    logger_cc.info('get {0}.'.format(body))
     if len(body["id"]) == 0:
         answer = {"status": 400, "response": "Id was missing"}
     else:
@@ -50,6 +51,7 @@ def callback_creation(ch, method, properties, body):
                 pymongo.errors.NetworkTimeout,
                 pymongo.errors.AutoReconnect):
             answer = {"status": 500, "response": "Something has gone wrong"}
+    logger_cc.info('return {0}.'.format(answer))
     channel.basic_publish(exchange="tornado",
                           routing_key="answer",
                           body=json.dumps(answer),
@@ -59,6 +61,7 @@ def callback_creation(ch, method, properties, body):
 
 def callback_reading(ch, method, properties, body):
     body, err = json.loads(body), 0
+    logger_cr.info('get {0}.'.format(body))
     if len(body["id"]) == 0:
         answer = {"status": 400, "response": "Id was missing"}
     else:
@@ -74,6 +77,7 @@ def callback_reading(ch, method, properties, body):
         answer = {"status": 200, "content": ""}
     elif err == 0:
         answer = {"status": 200, "content": answer["content"]}
+    logger_cr.info('return {0}.'.format(answer))
     channel.basic_publish(exchange="tornado",
                           routing_key="answer",
                           body=json.dumps(answer),
@@ -85,12 +89,17 @@ channel.basic_consume(callback_creation, queue="creation")
 channel.basic_consume(callback_reading, queue="reading")
 
 
-# TEST
+# TEST will be removed soon
+logger_ct = Logger('callback_test').get()
+channel.queue_declare(queue="answer", durable=True)
+
+
 def callback_test(ch, method, properties, body):
     body = json.loads(body)
-    print("Received %r" % body)
+    logger_ct.info('return {0}.'.format(body))
     ch.basic_ack(delivery_tag=method.delivery_tag)
+
 channel.basic_consume(callback_test, queue="answer")
-# TEST
+# TEST will be removed soon
 
 channel.start_consuming()
