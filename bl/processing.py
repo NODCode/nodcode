@@ -4,6 +4,7 @@ import pymongo
 import ConfigParser
 import pymongo.errors as pmgerr
 
+
 # pika settings
 connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
 channel = connection.channel()
@@ -27,10 +28,10 @@ cfg = ''
 for _ in cfg_parser.sections():
     cfg = cfg + cfg_parser.get(_, 'ip') + ':'
     cfg = cfg + cfg_parser.get(_, 'port') + ','
-cfg = 'mongodb://' + cfg[:-1]
+cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001'
 
 # pymongo settings
-client = pymongo.MongoClient(cfg)
+client = pymongo.MongoClient(cfg, readPreference='primaryPreferred')
 db = client["local"]["test"]
 
 
