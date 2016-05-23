@@ -2,7 +2,6 @@ import pika
 import json
 import pymongo
 import ConfigParser
-import pymongo.errors as pmgerr
 
 
 # pika settings
@@ -28,7 +27,7 @@ cfg = ''
 for _ in cfg_parser.sections():
     cfg = cfg + cfg_parser.get(_, 'ip') + ':'
     cfg = cfg + cfg_parser.get(_, 'port') + ','
-cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001'
+cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001/?localThresholdMS=15'
 
 # pymongo settings
 client = pymongo.MongoClient(cfg, readPreference='primaryPreferred')
@@ -47,7 +46,9 @@ def callback_creation(ch, method, properties, body):
                 db.update_one({"id": body["id"]},
                               {"$set": {"content": body["content"]}})
             answer = {"status": 200, "response": "Message was added"}
-        except pmgerr.ServerSelectionTimeoutError, pmgerr.NetworkTimeout:
+        except (pymongo.errors.ServerSelectionTimeoutError,
+                pymongo.errors.NetworkTimeout,
+                pymongo.errors.AutoReconnect):
             answer = {"status": 500, "response": "Something has gone wrong"}
     channel.basic_publish(exchange="tornado",
                           routing_key="answer",
@@ -57,18 +58,21 @@ def callback_creation(ch, method, properties, body):
 
 
 def callback_reading(ch, method, properties, body):
-    body = json.loads(body)
+    body, err = json.loads(body), 0
     if len(body["id"]) == 0:
         answer = {"status": 400, "response": "Id was missing"}
     else:
         try:
             answer = db.find_one(body)
-        except pmgerr.ServerSelectionTimeoutError, pmgerr.NetworkTimeout:
+        except (pymongo.errors.ServerSelectionTimeoutError,
+                pymongo.errors.NetworkTimeout,
+                pymongo.errors.AutoReconnect):
             answer = {"status": 500, "response": "Something has gone wrong"}
+            err = 1
     if answer is None:
         db.insert_one({"id": body["id"], "content": ""})
         answer = {"status": 200, "content": ""}
-    else:
+    elif err == 0:
         answer = {"status": 200, "content": answer["content"]}
     channel.basic_publish(exchange="tornado",
                           routing_key="answer",
