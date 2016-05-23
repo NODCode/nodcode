@@ -7,7 +7,7 @@ channel = connection.channel()
 channel.queue_declare(queue='creation', durable=True)
 
 message = {'id': '111',
-           'message': 'hallo_world1'}
+           'content': 'hallo_world1'}
 
 message_d = json.dumps(message)
 
