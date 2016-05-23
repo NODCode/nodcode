@@ -10,3 +10,5 @@ mongo --port 27018 --eval 'rs.initiate({_id: "rs001",version: 1,members: [{_id: 
 
 mongo --port 27018 --eval 'rs.add("172.18.0.12:27017")'
 mongo --port 27018 --eval 'rs.add("172.18.0.13:27017")'
+
+mongo --port 27018 --eval 'db.getMongo().setReadPref("primaryPreferred")'
