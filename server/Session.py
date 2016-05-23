@@ -1,6 +1,6 @@
 import cPickle as pickle
 from uuid import uuid4
-import redis
+from rediscluster import StrictRedisCluster
 from Logger import Logger
 
 
@@ -13,8 +13,8 @@ class Session(object):
             'expire': 7200,
         }
         self.options.update(options)
-        # TODO: add host/port/db setting
-        self.redis = redis.StrictRedis()
+        self.redis = redis.StrictRedisCluster(
+            startup_nodes=self.options['startup_nodes'])
         self.logger = Logger('session').get()
 
     def get(self):

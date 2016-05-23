@@ -3,6 +3,8 @@
 import sys
 import json
 import time
+import uuid
+import datetime
 
 import tornado.ioloop
 import tornado.web
@@ -17,13 +19,15 @@ class BaseHandler(tornado.web.RequestHandler):
     def initialize(self, session_store):
         self.session_store = session_store
 
-    def get_user(self):
-        self.session_store.get()
+    def get_timestamp(self, uuid_key):
+        self.session_store.get(uuid_key)
 
-    def set_user(self, name):
-        self.session_store.set(name)
+    def set_timestamp(self, uuid_key):
+        self.session_store.set(uuid_key, str(datetime.datetime.now().time()))
 
     def write_json(self, msg):
+        self.logger.debug('Add timestamp: %s' % str(self.timestamp))
+        msg['timestamp'] = self.timestamp
         messages = json.dumps(msg)
         self.logger.debug('Messages for writing: %s' % str(messages))
         self.set_header("Content-type", "application/json")
@@ -42,13 +46,24 @@ class MainHandler(BaseHandler):
     @tornado.web.asynchronous
     def post(self):
         self.logger.debug('New POST request incoming')
-        if not self.get_user():
-            error_msg = {
-                'status': 400,
-                'message': 'Something has gone wrong'
-            }
-            self.write_json(error_msg)
-            return
+        # For web client + Cookie
+        # if self.get_secure_cookie('user'):
+        #     self.logger.debug('Cookie already exists')
+        #     uui = self.get_secure_cookie('user')
+        #     self.logger.debug('Getting uuid: %' % str(uui))
+        #     self.timestamp = self.get_timestamp(uui)
+        #     self.logger.debug('Getting shared timestamp: %' % str(self.timestamp))
+        # else:
+        #     self.logger.debug('Add cookie')
+        #     uuid = str(uuid.uuid1())
+        #     self.logger.debug('Generate uuid: %' % str(uui))
+        #     self.set_secure_cookie('user', uuid)
+        #     self.set_timestamp(uui)
+
+        # Just for demonstrate sharing
+        self.timestamp = self.get_timestamp('user')
+        if not self.timestamp:
+            self.get_timestamp('user')
 
         user_id = self.get_argument('id', default=None)
         message = self.get_argument('message', default=None)
@@ -80,20 +95,6 @@ class MainHandler(BaseHandler):
                                              tornado_callback=self.write_json)
 
 
-class LoginHandler(BaseHandler):
-
-    def initialize(self, session_store, logger):
-        super(LoginHandler, self).initialize(session_store=session_store)
-        self.logger = logger
-
-    def post(self):
-        # TODO: definitly, we should use more secure way, but not today
-        self.set_user(self.get_argument('name'))
-        self.logger.debug('Login is passed')
-        self.write_json({'status': 200,
-                         'response': 'Authorized'})
-
-
 def main():
     try:
         port = int(sys.argv[1])
@@ -108,14 +109,21 @@ def main():
     queue_create = 'creation'
 
     logger_web = Logger('tornado-%s' % port).get()
+
+    # TODO: read it from config.ini or pass by args?
+    options = {
+        startup_nodes = [{"host": "127.0.0.1", "port": "6380"},
+                         {"host": "127.0.0.1", "port": "6381"},
+                         {"host": "127.0.0.1", "port": "6382"}]
+    }
     session_store = Session()
     application = tornado.web.Application(
         [(r'/', MainHandler, dict(session_store=session_store,
                                   logger=logger_web,
                                   queue_read=queue_read,
-                                  queue_create=queue_create)),
-         (r'/login', LoginHandler, dict(session_store=session_store,
-                                        logger=logger_web))]
+                                  queue_create=queue_create))],
+        # yeah, it's not secure, but it just for test
+        cookie_secret='de973a5e-211f-11e6-bde5-3859f9e0729b'
     )
 
     logger_pika = Logger('tornado-%s-pika' % port).get()
