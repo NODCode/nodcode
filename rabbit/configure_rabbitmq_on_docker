@@ -19,17 +19,27 @@ After successful running the cluster - 3 nodes are started.
 To connect to rabbit1 node :
 	docker exec -it dockerrabbitmqcluster_rabbit1_1 /bin/bash
 
+To set up automatic synchronization between nodes (do this only for rabbit@rabbit1):
+	rabbitmqctl set_policy ha-all "." '{"ha-mode":"all", "ha-sync-mode":"automatic"}'
+
 To check the status of cluster:
 	rabbitmqctl cluster_status
 
 To stop this node:
 	rabbitmqctl stop
+	OR
+	docker stop dockerrabbitmqcluster_rabbit1_1
 
 To start this node again:
 	docker start dockerrabbitmqcluster_rabbit1_1
 
+## 	Before you will start "slave" nodes you need to start main node - rabbit@rabbit1.
+
+## 	You may have not "dockerrabbitmqcluster_" but "username_", for details see: docker ps -a
+
 ##Once cluster is up:
-##	The management console can be accessed at http://hostip:15672
+##	The management console can be accessed at http://localhost:15672
+##	Login: guest, Password: guest.
 ##	The connection host should look like this: hostip:5672,hostip:5673,hostip:5674
 
 
