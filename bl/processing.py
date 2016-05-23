@@ -40,7 +40,11 @@ def callback_creation(ch, method, properties, body):
         answer = {"status": 400, "response": "Id was missing"}
     else:
         try:
-            db.insert_one(body)
+            if db.find_one({"id": body["id"]}) is None:
+                db.insert_one(body)
+            else:
+                db.update_one({"id": body["id"]},
+                              {"$set": {"content": body["content"]}})
             answer = {"status": 200, "response": "Message was added"}
         except pmgerr.ServerSelectionTimeoutError, pmgerr.NetworkTimeout:
             answer = {"status": 500, "response": "Something has gone wrong"}
