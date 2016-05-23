@@ -4,7 +4,6 @@ import pymongo
 import ConfigParser
 import pymongo.errors as pmgerr
 
-
 # pika settings
 connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
 channel = connection.channel()
@@ -28,10 +27,10 @@ cfg = ''
 for _ in cfg_parser.sections():
     cfg = cfg + cfg_parser.get(_, 'ip') + ':'
     cfg = cfg + cfg_parser.get(_, 'port') + ','
-cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001'
+cfg = 'mongodb://' + cfg[:-1]
 
 # pymongo settings
-client = pymongo.MongoClient(cfg, readPreference='primaryPreferred')
+client = pymongo.MongoClient(cfg)
 db = client["local"]["test"]
 
 
@@ -41,11 +40,7 @@ def callback_creation(ch, method, properties, body):
         answer = {"status": 400, "response": "Id was missing"}
     else:
         try:
-            if db.find_one({"id": body["id"]}) is None:
-                db.insert_one(body)
-            else:
-                db.update_one({"id": body["id"]},
-                              {"$set": {"content": body["content"]}})
+            db.insert_one(body)
             answer = {"status": 200, "response": "Message was added"}
         except pmgerr.ServerSelectionTimeoutError, pmgerr.NetworkTimeout:
             answer = {"status": 500, "response": "Something has gone wrong"}
