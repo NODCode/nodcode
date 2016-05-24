@@ -10,7 +10,7 @@ message = {'id': '111'}
 
 message_d = json.dumps(message)
 
-channel.basic_publish(exchange='',
+channel.basic_publish(exchange='tornado',
                       routing_key='reading',
                       body=message_d,
                       properties=pika.BasicProperties(delivery_mode=2,))

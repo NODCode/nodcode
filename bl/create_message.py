@@ -7,11 +7,11 @@ channel = connection.channel()
 channel.queue_declare(queue='creation', durable=True)
 
 message = {'id': '111',
-           'message': 'hallo_world1'}
+           'content': 'hallo_world1'}
 
 message_d = json.dumps(message)
 
-channel.basic_publish(exchange='',
+channel.basic_publish(exchange='tornado',
                       routing_key='creation',
                       body=message_d,
                       properties=pika.BasicProperties(delivery_mode=2,))
