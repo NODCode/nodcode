@@ -15,6 +15,7 @@ channel.queue_declare(queue="reading", durable=True)
 channel.basic_qos(prefetch_count=1)  # count messages to a worker at a time
 
 # logger
+logger_init = Logger('initiation').get()
 logger_cc = Logger('callback_creation').get()
 logger_cr = Logger('callback_reading').get()
 
@@ -27,11 +28,14 @@ cfg = ''
 for _ in cfg_parser.sections():
     cfg = cfg + cfg_parser.get(_, 'ip') + ':'
     cfg = cfg + cfg_parser.get(_, 'port') + ','
+
+logger_init.info('Mongo ip: {0}.'.format(cfg[:-1]))
 cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001/?localThresholdMS=15'
 
 # pymongo settings
 client = pymongo.MongoClient(cfg, readPreference='primaryPreferred')
 db = client["local"]["test"]
+print client
 
 
 def callback_creation(ch, method, properties, body):
