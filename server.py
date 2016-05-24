@@ -4,7 +4,7 @@ import os
 import sys
 import json
 import time
-import uuid
+# import uuid
 import datetime
 
 import tornado.ioloop
@@ -46,7 +46,7 @@ class MainHandler(BaseHandler):
 
     @tornado.web.asynchronous
     def get(self):
-        self.render('index.html')
+        self.render('client/index.html')
 
     @tornado.web.asynchronous
     def post(self):
@@ -57,7 +57,8 @@ class MainHandler(BaseHandler):
         #     uui = self.get_secure_cookie('user')
         #     self.logger.debug('Getting uuid: %' % str(uui))
         #     self.timestamp = self.get_timestamp(uui)
-        #     self.logger.debug('Getting shared timestamp: %' % str(self.timestamp))
+        #     self.logger.debug('Getting shared'
+        #                       'timestamp: %' % str(self.timestamp))
         # else:
         #     self.logger.debug('Add cookie')
         #     uuid = str(uuid.uuid1())
@@ -121,11 +122,13 @@ def main():
                      {"host": "127.0.0.1", "port": "6382"}]
     session_store = Session(startup_nodes=startup_nodes)
 
+    public_root = os.path.join(os.path.dirname(__file__), 'client/')
     application = tornado.web.Application(
         [(r'/', MainHandler, dict(session_store=session_store,
                                   logger=logger_web,
                                   queue_read=queue_read,
-                                  queue_create=queue_create))],
+                                  queue_create=queue_create)),
+         (r'/(.*)', tornado.web.StaticFileHandler, {'path': public_root})],
         # yeah, it's not secure, but it just for test
         cookie_secret='de973a5e-211f-11e6-bde5-3859f9e0729b'
     )
