@@ -14,3 +14,4 @@ File structure:
 | server.py | run tornado server          |
 
 Requirement for Docker: version >= 1.10 
+Requirement for Redis: version >= 3.2.0
