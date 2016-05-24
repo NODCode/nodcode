@@ -13,7 +13,7 @@ class Session(object):
             'expire': 7200,
         }
         self.options.update(options)
-        self.redis = redis.StrictRedisCluster(
+        self.redis = StrictRedisCluster(
             startup_nodes=self.options['startup_nodes'])
         self.logger = Logger('session').get()
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import json
 import time
@@ -42,6 +43,10 @@ class MainHandler(BaseHandler):
         self.logger = logger
         self.queue_read = queue_read
         self.queue_create = queue_create
+
+    @tornado.web.asynchronous
+    def get(self):
+        self.render('index.html')
 
     @tornado.web.asynchronous
     def post(self):
@@ -111,12 +116,11 @@ def main():
     logger_web = Logger('tornado-%s' % port).get()
 
     # TODO: read it from config.ini or pass by args?
-    options = {
-        startup_nodes = [{"host": "127.0.0.1", "port": "6380"},
-                         {"host": "127.0.0.1", "port": "6381"},
-                         {"host": "127.0.0.1", "port": "6382"}]
-    }
-    session_store = Session()
+    startup_nodes = [{"host": "127.0.0.1", "port": "6380"},
+                     {"host": "127.0.0.1", "port": "6381"},
+                     {"host": "127.0.0.1", "port": "6382"}]
+    session_store = Session(startup_nodes=startup_nodes)
+
     application = tornado.web.Application(
         [(r'/', MainHandler, dict(session_store=session_store,
                                   logger=logger_web,
