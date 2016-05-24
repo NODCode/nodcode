@@ -1,3 +1,4 @@
+(function(){
 angular.module('NodeCode')
     .config(function($stateProvider, $urlRouterProvider) {
     
@@ -25,3 +26,4 @@ angular.module('NodeCode')
         
 
 });
+})();
