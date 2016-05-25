@@ -40,8 +40,6 @@
                                         console.log("err SEND", err);
                                         deferred.reject();
 
-                                        alert("WITHOUT CHANCE TO CONNECT TO SERVER");
-
                                     });
 
                             });
@@ -81,7 +79,6 @@
                                     }, function(err) {
                                         console.log("err GET", err);
                                         deferred.reject();
-                                        alert("WITHOUT CHANCE TO CONNECT TO SERVER");
                                     });
                             });
                     });

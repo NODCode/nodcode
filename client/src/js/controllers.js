@@ -17,6 +17,7 @@
         	          },
         	          function(errorData) {
                         console.log("resp:", errorData);
+                        alert("something was wrong:(");
         	          });
                 $scope.message = "";
             }
@@ -35,6 +36,7 @@
 	          },
 	          function(errorData) {
                 console.log("resp:", errorData);
+                $scope.message="something was wrong:(";
 	          });
 
         $scope.logOut = function() {
