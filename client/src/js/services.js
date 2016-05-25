@@ -1,12 +1,17 @@
 (function() {
     angular.module('NodeCode')
-        .factory('nodService', function($http, $q) {
+        .factory('nodService', function($http, $q, $httpParamSerializer) {
             var nod = {};
+            var url = 'http://localhost:8080/';
+            var options = {
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            };
 
-            nod.sendMessage = function(id, message) {
+            nod.sendMessage = function(idArg, messageArg) {
                 var deferred = $q.defer();
-
-                $http.post('http://localhost:8080/', id, message)
+                $http.post(url,
+                           $httpParamSerializer({'id': idArg, 'message': messageArg}),
+                           options)
                     .then(function(data) {
                         deferred.resolve(data);
                         console.log("ok");
@@ -17,10 +22,12 @@
 
                 return deferred.promise;
             };
-            nod.getMessage = function(id) {
+            nod.getMessage = function(idArg) {
                 var deferred = $q.defer();
 
-                $http.post('http://localhost:8080/', id)
+                $http.post(url,
+                           $httpParamSerializer({'id': idArg}),
+                           options)
                     .then(function(data) {
                         deferred.resolve(data);
                         console.log("ok");
