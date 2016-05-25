@@ -39,10 +39,10 @@ class PikaClient(object):
         # self.virtual_host = '/'
 
         # TODO: for demonstration purposes
-        self.host = '172.17.0.2'
-        main = pika.ConnectionParameters(host=self.host, port=7000)
-        repl1 = pika.ConnectionParameters(host=self.host, port=7001)
-        repl2 = pika.ConnectionParameters(host=self.host, port=7002)
+        self.host = '127.0.0.1'
+        main = pika.ConnectionParameters(host=self.host, port=5672)
+        repl1 = pika.ConnectionParameters(host=self.host, port=5673)
+        repl2 = pika.ConnectionParameters(host=self.host, port=5674)
 
         self._connect_pull = [main, repl1, repl2]
 
@@ -64,8 +64,7 @@ class PikaClient(object):
 
     def on_connected(self, connection):
         self.logger.debug('Connected to RabbitMQ on '
-                          '{host}:{port}'.format(host=self.host,
-                                                 port=self.port))
+                          '{host}'.format(host=self.host))
         self.connected = True
         self.connection = connection
         self.connection.channel(self.on_channel_open)

@@ -117,9 +117,12 @@ def main():
     logger_web = Logger('tornado-%s' % port).get()
 
     # TODO: read it from config.ini or pass by args?
-    startup_nodes = [{"host": "127.0.0.1", "port": "6380"},
-                     {"host": "127.0.0.1", "port": "6381"},
-                     {"host": "127.0.0.1", "port": "6382"}]
+    startup_nodes = [{"host": "172.17.0.2", "port": "7000"},
+                     {"host": "172.17.0.2", "port": "7001"},
+                     {"host": "172.17.0.2", "port": "7002"},
+		     {"host": "172.17.0.2", "port": "7003"},
+		     {"host": "172.17.0.2", "port": "7004"},
+		     {"host": "172.17.0.2", "port": "7005"},]
     session_store = Session(startup_nodes=startup_nodes)
 
     public_root = os.path.join(os.path.dirname(__file__), 'client/src')
