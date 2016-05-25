@@ -120,8 +120,7 @@ def main():
     startup_nodes = [{"host": "127.0.0.1", "port": "6380"},
                      {"host": "127.0.0.1", "port": "6381"},
                      {"host": "127.0.0.1", "port": "6382"}]
-    #session_store = Session(startup_nodes=startup_nodes)
-    session_store = None
+    session_store = Session(startup_nodes=startup_nodes)
 
     public_root = os.path.join(os.path.dirname(__file__), 'client/src')
     application = tornado.web.Application(
@@ -145,8 +144,11 @@ def main():
     logger_web.info('Tornado is serving on port {0}.'.format(port))
     ioloop = tornado.ioloop.IOLoop.instance()
 
-    ioloop.add_timeout(time.time() + .1, pc.connect)
-    ioloop.start()
+    try:
+        ioloop.add_timeout(time.time() + .1, pc.connect)
+        ioloop.start()
+    except:
+        pc.stop()
 
 if __name__ == '__main__':
     main()

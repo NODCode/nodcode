@@ -1,5 +1,5 @@
 import pika
-
+import time
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
@@ -9,6 +9,9 @@ from pika.adapters.tornado_connection import TornadoConnection
 
 class PikaClient(object):
     tornado_callback = None
+    _closing = False
+    _connect_index = 0
+    _connect_pull = None
 
     def __init__(self, logger, queue_name, queue_read, queue_create):
         # Construct a queue name we'll use for this instance only
@@ -30,27 +33,34 @@ class PikaClient(object):
         self.pending = list()
 
         # TODO: read from config
-        self.credentials = pika.PlainCredentials('guest', 'guest')
-        self.host = 'localhost'
-        self.port = 5672
-        self.virtual_host = '/'
+        # self.credentials = pika.PlainCredentials('guest', 'guest')
+        # self.host = 'localhost'
+        # self.port = 5672
+        # self.virtual_host = '/'
+
+        # TODO: for demonstration purposes
+        self.host = '172.17.0.2'
+        main = pika.ConnectionParameters(host=self.host, port=7000)
+        repl1 = pika.ConnectionParameters(host=self.host, port=7001)
+        repl2 = pika.ConnectionParameters(host=self.host, port=7002)
+
+        self._connect_pull = [main, repl1, repl2]
 
     def connect(self):
         if self.connecting:
             self.logger.warning('Already connecting to RabbitMQ')
             return
+        param = self._connect_pull[self._connect_index]
         self.logger.debug('Connecting to RabbitMQ on '
-                          '{host}:{port}'.format(host=self.host,
-                                                 port=self.port))
+                          '{host}:{port}'.format(host=param.host,
+                                                 port=param.port))
         self.connecting = True
-
-        param = pika.ConnectionParameters(host=self.host,
-                                          port=self.port,
-                                          virtual_host=self.virtual_host,
-                                          credentials=self.credentials)
-        self.connection = TornadoConnection(param,
-                                            on_open_callback=self.on_connected)
-        self.connection.add_on_close_callback(self.on_closed)
+        try:
+            self.connection = TornadoConnection(param,
+                                                on_open_callback=self.on_connected)
+            self.connection.add_on_close_callback(self.on_closed)
+        except:
+            self.reconnect()
 
     def on_connected(self, connection):
         self.logger.debug('Connected to RabbitMQ on '
@@ -127,8 +137,30 @@ class PikaClient(object):
         self.logger.debug('Basic Cancel Ok')
         self.connection.close()
 
-    def on_closed(self, connection):
-        self.logger.warning('Closed')
+    def on_closed(self, *args):
+        self.logger.warning('kwargs:' + str(args))
+        self.logger.warning('On closed. Try to reconnect...')
+        self.reconnect()
+
+    def reconnect(self):
+        self.connecting = False
+        self.connected = False
+        self.logger.warning('Some waiting...')
+        # some sleep for demonstration purposes
+        # TODO: masg like 'Start reconnect after 3...2...1..'
+        time.sleep(4)
+        self.logger.warning('Start reconnect')
+        if not self._closing:
+            self._connect_index = (self._connect_index + 1) % len(self._connect_pull)
+            self.logger.warning('Reconnect to %s' %
+                self._connect_pull[self._connect_index])
+            self.connect()
+        else:
+            self.logger.warning('Closing. Stop trying')
+
+    def stop(self):
+        self.logger.warning('STOP')
+        self._closing = True
         tornado.ioloop.IOLoop.instance().stop()
 
     def sample_message(self, msg, routing_key, tornado_callback):
