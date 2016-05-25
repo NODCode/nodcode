@@ -39,10 +39,10 @@ class PikaClient(object):
         # self.virtual_host = '/'
 
         # TODO: for demonstration purposes
-        self.host = '127.0.0.1'
+        self.host = 'localhost'
         main = pika.ConnectionParameters(host=self.host, port=5672)
-        repl1 = pika.ConnectionParameters(host=self.host, port=5673)
-        repl2 = pika.ConnectionParameters(host=self.host, port=5674)
+        repl1 = pika.ConnectionParameters(host=self.host, port=7001)
+        repl2 = pika.ConnectionParameters(host=self.host, port=7002)
 
         self._connect_pull = [main, repl1, repl2]
 
@@ -73,7 +73,7 @@ class PikaClient(object):
         self.logger.debug('Channel Open, Declaring Exchange')
         self.channel = channel
         self.channel.exchange_declare(exchange='tornado',
-                                      type='topic',
+                                      type='direct',
                                       durable=True,
                                       callback=self.on_exchange_declared)
 

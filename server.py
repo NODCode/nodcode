@@ -27,8 +27,8 @@ class BaseHandler(tornado.web.RequestHandler):
         self.session_store.set(uuid_key, str(datetime.datetime.now().time()))
 
     def write_json(self, msg):
-        # self.logger.debug('Add timestamp: %s' % str(self.timestamp))
-        # msg['timestamp'] = self.timestamp
+        self.logger.debug('Add timestamp: %s' % str(self.timestamp))
+        msg['timestamp'] = self.timestamp
         messages = json.dumps(msg)
         self.logger.debug('Messages for writing: %s' % str(messages))
         self.set_header("Content-type", "application/json")
@@ -67,9 +67,9 @@ class MainHandler(BaseHandler):
         #     self.set_timestamp(uui)
 
         # Just for demonstrate sharing
-        # self.timestamp = self.get_timestamp('user')
-        # if not self.timestamp:
-        #     self.get_timestamp('user')
+        self.timestamp = self.get_timestamp('user')
+        if not self.timestamp:
+            self.get_timestamp('user')
 
         user_id = self.get_argument('id', default=None)
         message = self.get_argument('message', default=None)
@@ -117,12 +117,9 @@ def main():
     logger_web = Logger('tornado-%s' % port).get()
 
     # TODO: read it from config.ini or pass by args?
-    startup_nodes = [{"host": "172.17.0.2", "port": "7000"},
-                     {"host": "172.17.0.2", "port": "7001"},
-                     {"host": "172.17.0.2", "port": "7002"},
-		     {"host": "172.17.0.2", "port": "7003"},
-		     {"host": "172.17.0.2", "port": "7004"},
-		     {"host": "172.17.0.2", "port": "7005"},]
+    startup_nodes = [{"host": "127.0.0.1", "port": "6380"},
+                     {"host": "127.0.0.1", "port": "6381"},
+                     {"host": "127.0.0.1", "port": "6382"}]
     session_store = Session(startup_nodes=startup_nodes)
 
     public_root = os.path.join(os.path.dirname(__file__), 'client/src')
