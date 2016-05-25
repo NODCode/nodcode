@@ -1,24 +1,18 @@
 import pika
 import json
 import pymongo
+import time
 import ConfigParser
+import sys
 from Logger import Logger
 
-# pika settings
-connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
-channel = connection.channel()
-channel.exchange_declare(exchange='tornado', type='topic', durable=True)
 
-channel.queue_declare(queue="creation", durable=True)
-channel.queue_declare(queue="reading", durable=True)
-
-channel.basic_qos(prefetch_count=1)  # count messages to a worker at a time
+sys.setrecursionlimit(1500)
 
 # logger
-logger_init = Logger('initiation').get()
 logger_cc = Logger('callback_creation').get()
 logger_cr = Logger('callback_reading').get()
-
+logger_rb = Logger('rabbit port using').get()
 
 # replica connection string from mongo_conf.ini
 cfg_parser = ConfigParser.ConfigParser()
@@ -28,14 +22,11 @@ cfg = ''
 for _ in cfg_parser.sections():
     cfg = cfg + cfg_parser.get(_, 'ip') + ':'
     cfg = cfg + cfg_parser.get(_, 'port') + ','
-
-logger_init.info('Mongo ip: {0}.'.format(cfg[:-1]))
 cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001/?localThresholdMS=15'
 
 # pymongo settings
 client = pymongo.MongoClient(cfg, readPreference='primaryPreferred')
 db = client["local"]["test"]
-print client
 
 
 def callback_creation(ch, method, properties, body):
@@ -89,13 +80,8 @@ def callback_reading(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-channel.basic_consume(callback_creation, queue="creation")
-channel.basic_consume(callback_reading, queue="reading")
-
-
 # TEST will be removed soon
 logger_ct = Logger('callback_test').get()
-channel.queue_declare(queue="answer", durable=True)
 
 
 def callback_test(ch, method, properties, body):
@@ -103,7 +89,48 @@ def callback_test(ch, method, properties, body):
     logger_ct.info('return {0}.'.format(body))
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
-channel.basic_consume(callback_test, queue="answer")
 # TEST will be removed soon
 
-channel.start_consuming()
+port_arr = [5672, 5673, 5674]
+port_number = 0
+
+
+def init():
+    try:
+
+        global channel, port_number
+
+        # pika settings
+        port_number += 1
+        port_number %= 3
+
+        logger_rb.info('port {0}.'.format(port_number))
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters("localhost", port=port_arr[port_number]))
+
+        channel = connection.channel()
+        channel.exchange_declare(exchange='tornado',
+                                 type='topic', durable=True)
+
+        channel.queue_declare(queue="creation", durable=True)
+        channel.queue_declare(queue="reading", durable=True)
+
+        channel.basic_qos(prefetch_count=1)  # count messages to a worker
+
+        channel.basic_consume(callback_creation, queue="creation")
+        channel.basic_consume(callback_reading, queue="reading")
+
+        # TEST will be removed soon
+        channel.queue_declare(queue="answer", durable=True)
+        channel.basic_consume(callback_test, queue="answer")
+        # TEST will be removed soon
+        channel.start_consuming()
+    except (pika.exceptions.IncompatibleProtocolError,
+            pika.exceptions.ConnectionClosed):
+        time.sleep(5)
+        init()
+
+
+# bad bad thing you do
+while True:
+    init()
