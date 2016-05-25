@@ -12,7 +12,6 @@
             if ($scope.message != "" && $scope.message != undefined) {
                 var resp = nodService.sendMessage($scope.username,$scope.message);
                 console.log(resp);
-                //alert(nodService.sendMessage($scope.username,$scope.message));
                 alert(resp);
                 $scope.message = "";
             }
