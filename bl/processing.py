@@ -110,7 +110,7 @@ def init():
 
         channel = connection.channel()
         channel.exchange_declare(exchange='tornado',
-                                 type='topic', durable=True)
+                                 type='direct', durable=True)
 
         channel.queue_declare(queue="creation", durable=True)
         channel.queue_declare(queue="reading", durable=True)
