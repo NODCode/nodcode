@@ -1,0 +1,3 @@
+docker start dockerrabbitmqcluster_rabbit1_1
+docker start dockerrabbitmqcluster_rabbit2_1
+docker start dockerrabbitmqcluster_rabbit3_1
