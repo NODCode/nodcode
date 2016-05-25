@@ -11,8 +11,8 @@
             $scope.status = "";
             if ($scope.message != "" && $scope.message != undefined) {
                 var resp = nodService.sendMessage($scope.username,$scope.message);
-                console.log(resp);
-                alert(resp);
+                console.log(resp.data.response);
+                alert(resp.data.response);
                 $scope.message = "";
             }
             else {
@@ -23,9 +23,11 @@
     })
        .controller('messagesPageController', function($scope, $http, mainService, $state, $cookies, nodService) {
         $scope.username = $cookies.get('username');
-        var data = nodService.getMessage($scope.username);
-        console.log(data);
-        $scope.message = data;
+        var resp = nodService.getMessage($scope.username);
+        console.log(resp.data.content);
+        $scope.message = resp.data.content;
+
+
         $scope.logOut = function() {
             $state.go('home');
             mainService.logOut();
