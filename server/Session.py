@@ -1,11 +1,11 @@
 import cPickle as pickle
-from uuid import uuid4
+import datetime
 from rediscluster import StrictRedisCluster
 from Logger import Logger
 
 
 class Session(object):
-    sessionid = None
+    uui = None
 
     def __init__(self, **options):
         self.options = {
@@ -17,34 +17,32 @@ class Session(object):
             startup_nodes=self.options['startup_nodes'])
         self.logger = Logger('session').get()
 
-    def get(self):
+    def get(self, uui):
         self.logger.debug('Get session')
-        if self.sessionid:
-            return self._get_session(self.sessionid, 'user')
-        else:
-            self.sessionid = self._generate_sid()
-            return None
+        return self._get_session(uui)
 
-    def set(self, name):
-        self.logger.debug('Set new session: name {name}'.format(name=name))
-        self._set_session(self.sessionid, 'user', name)
+    def set(self, uui):
+        self.logger.debug('Set new session: uuid {name}'.format(name=uui))
+        self.uui = uui
+        self._set_session(uui,
+                          str(datetime.datetime.now().time()))
 
     def delete(self):
-        self.redis.delete(self._prefixed(self.sessionid))
+        self.redis.delete(self._prefixed(self.uui))
 
     def _prefixed(self, sid):
         return '%s:%s' % (self.options['key_prefix'], sid)
 
-    def _generate_sid(self, ):
-        return uuid4().get_hex()
-
-    def _get_session(self, sid, name):
-        data = self.redis.hget(self._prefixed(sid), name)
+    def _get_session(self, uui):
+        data = self.redis.hget(self._prefixed(uui), 'user')
+        self.logger.debug('Get session data: {data}'.format(data=data))
         session = pickle.loads(data) if data else None
         return session
 
-    def _set_session(self, sid, session_data, name):
+    def _set_session(self, uui, session_data):
         expiry = self.options['expire']
-        self.redis.hset(self._prefixed(sid), name, pickle.dumps(session_data))
+        self.redis.hset(self._prefixed(uui),
+                        'user',
+                        pickle.dumps(session_data))
         if expiry:
-            self.redis.expire(self._prefixed(sid), expiry)
+            self.redis.expire(self._prefixed(uui), expiry)
