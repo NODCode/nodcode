@@ -6,7 +6,7 @@ import tornado.ioloop
 import tornado.web
 
 from pika.adapters.tornado_connection import TornadoConnection
-
+from pika.exceptions import AMQPConnectionError
 
 class PikaClient(object):
     tornado_callback = None
@@ -54,16 +54,14 @@ class PikaClient(object):
                           '{host}:{port}'.format(host=param.host,
                                                  port=param.port))
         self.connecting = True
+        # TODO: add on_connection_error
         try:
-            # Suppress stderr for pretty output
-            sys.stderr = StringIO();
             self.connection = TornadoConnection(
                 param,
                 on_open_callback=self.on_connected
             )
             self.connection.add_on_close_callback(self.on_closed)
-            sys.stderr = sys.__stderr__;
-        except:
+        except AMQPConnectionError:
             self.reconnect()
 
     def on_connected(self, connection):
