@@ -1,5 +1,6 @@
 import pika
 import time
+import datetime
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
@@ -13,6 +14,9 @@ class PikaClient(object):
     _connect_index = 0
     _connect_pull = None
     _one_respond_made = None
+    _waiting_to_reconnect = 3
+    _expire_reconnect = 15
+    _last_reconnect_fail = None
 
     def __init__(self, logger,
                  queue_name, queue_read, queue_create,
@@ -51,11 +55,14 @@ class PikaClient(object):
                                                  port=param.port))
         self.connecting = True
         try:
+            # Suppress stderr for pretty output
+            sys.stderr = StringIO();
             self.connection = TornadoConnection(
                 param,
                 on_open_callback=self.on_connected
             )
             self.connection.add_on_close_callback(self.on_closed)
+            sys.stderr = sys.__stderr__;
         except:
             self.reconnect()
 
@@ -139,19 +146,37 @@ class PikaClient(object):
         self.reconnect()
 
     def reconnect(self):
+        self.logger.warning('Fail to connect')
+        if self._last_reconnect_fail:
+            current_fail_time = datetime.datetime.now()
+            fail_timedelta = current_fail_time - self._last_reconnect_fail
+            self.logger.debug('Check reconnect expires, '
+                              'timedelta: %s seconds' % fail_timedelta.seconds)
+            if fail_timedelta.seconds >= self._expire_reconnect:
+                self._closing = False
+                self._connect_index = 0
+                self._last_reconnect_fail = datetime.datetime.now()
+                self.logger.debug('Reconnect time is expired, '
+                                  'reset reconnect parameters')
+        else:
+            self.logger.warning('Set first fail reconnect time')
+            self._last_reconnect_fail = datetime.datetime.now()
+
         self.connecting = False
         self.connected = False
-        self.logger.warning('5 sec waiting...')
-        time.sleep(5)
-        self.logger.warning('Start reconnect')
+        self.logger.warning('%s sec waiting...' % self._waiting_to_reconnect)
+        time.sleep(self._waiting_to_reconnect)
         if not self._closing:
-            self._connect_index = ((self._connect_index + 1) %
-                                   len(self._connect_pull))
-            self.logger.warning('Try to reconnect to %s' %
-                                self._connect_pull[self._connect_index])
+            self._connect_index += 1
+            self.logger.warning('Try to reconnect to %s, try number %s' %
+                                (self._connect_pull[self._connect_index],
+                                 self._connect_index))
+            if self._connect_index == len(self._connect_pull) - 1:
+                self._closing = True
             self.connect()
         else:
             self.logger.warning('Closing. Stop trying')
+            self.stop()
 
     def stop(self):
         self.logger.warning('STOP')
