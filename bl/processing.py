@@ -7,21 +7,25 @@ import sys
 from Logger import Logger
 
 
-sys.setrecursionlimit(1500)
+sys.setrecursionlimit(500)
 
-# logger
+# loggers
 logger_cc = Logger('callback_creation').get()
 logger_cr = Logger('callback_reading').get()
 logger_rb = Logger('rabbit port using').get()
 
-# replica connection string from mongo_conf.ini
+
+# pymongo connection from ..config/server_demonstrate.ini
 cfg_parser = ConfigParser.ConfigParser()
-cfg_parser.read('mongo_conf.ini')
+cfg_parser.read(sys.argv[1])
+mongo_nodes = zip(cfg_parser.get('mongocluster', 'hosts').split(' '),
+                  cfg_parser.get('mongocluster', 'ports').split(' '))
 
 cfg = ''
-for _ in cfg_parser.sections():
-    cfg = cfg + cfg_parser.get(_, 'ip') + ':'
-    cfg = cfg + cfg_parser.get(_, 'port') + ','
+for _ in mongo_nodes:
+    cfg = cfg + _[0] + ':'
+    cfg = cfg + _[1] + ','
+
 cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001/?localThresholdMS=15'
 
 # pymongo settings
@@ -92,45 +96,48 @@ def callback_test(ch, method, properties, body):
 # TEST will be removed soon
 
 port_arr = [5672, 5673, 5674]
-port_number = 0
+port_number = 2
 
 
-def init():
+def rabbit_connect():
     try:
-
-        global channel, port_number
-
-        # pika settings
+        global port_number
         port_number += 1
         port_number %= 3
 
-        logger_rb.info('port {0}.'.format(port_number))
+        logger_rb.info('try to use port {0}.'.format(port_arr[port_number]))
         connection = pika.BlockingConnection(
             pika.ConnectionParameters("localhost", port=port_arr[port_number]))
-
-        channel = connection.channel()
-        channel.exchange_declare(exchange='tornado',
-                                 type='direct', durable=True)
-
-        channel.queue_declare(queue="creation", durable=True)
-        channel.queue_declare(queue="reading", durable=True)
-
-        channel.basic_qos(prefetch_count=1)  # count messages to a worker
-
-        channel.basic_consume(callback_creation, queue="creation")
-        channel.basic_consume(callback_reading, queue="reading")
-
-        # TEST will be removed soon
-        channel.queue_declare(queue="answer", durable=True)
-        channel.basic_consume(callback_test, queue="answer")
-        # TEST will be removed soon
-        channel.start_consuming()
+        logger_rb.info('using port {0}.'.format(port_arr[port_number]))
+        return connection
     except (pika.exceptions.IncompatibleProtocolError,
             pika.exceptions.ConnectionClosed):
         time.sleep(5)
-        init()
+        rabbit_connect()
 
 
-# bad bad thing you do
-while True:
+def init():
+    global channel
+
+    connection = rabbit_connect()
+    channel = connection.channel()
+    channel.exchange_declare(exchange='tornado',
+                             type='direct', durable=True)
+
+    channel.queue_declare(queue="creation", durable=True)
+    channel.queue_declare(queue="reading", durable=True)
+
+    channel.basic_qos(prefetch_count=1)  # count messages to a worker
+
+    channel.basic_consume(callback_creation, queue="creation")
+    channel.basic_consume(callback_reading, queue="reading")
+
+    # TEST will be removed soon
+    channel.queue_declare(queue="answer", durable=True)
+    channel.basic_consume(callback_test, queue="answer")
+    # TEST will be removed soon
+    channel.start_consuming()
+
+
+if __name__ == '__main__':
     init()
