@@ -20,9 +20,11 @@ class Session(object):
         self.connect()
         self.logger = Logger('session').get()
 
-    def connect():
-        self.redis = StrictRedisCluster(
-            startup_nodes=self.options['startup_nodes'])
+    def connect(self):
+        def func():
+            self.redis = StrictRedisCluster(
+                startup_nodes=self.options['startup_nodes'])
+        self._safe_way(func)
 
     def get(self, uui):
         self.logger.debug('Try to get session')
