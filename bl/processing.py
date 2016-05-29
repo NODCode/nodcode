@@ -25,15 +25,17 @@ def mongo_connection(database, collection):
 
 
 def rabbit_connection():
+    global r_numb, conn_attempts
     cfg_parser = ConfigParser.ConfigParser()
     cfg_parser.read(sys.argv[1])
     rabbit_nodes = zip(cfg_parser.get('rabbitmq', 'hosts').split(' '),
                        cfg_parser.get('rabbitmq', 'ports').split(' '))
-    try:
-        global r_numb
-        r_numb += 1
-        r_numb %= 3
 
+    r_numb += 1
+    r_numb %= 3
+    conn_attempts += 1
+
+    if conn_attempts <= 3:
         logger_rb.info('try to use port {0}.'.format(rabbit_nodes[r_numb][1]))
 
         connection = pika.BlockingConnection(
@@ -41,11 +43,11 @@ def rabbit_connection():
                                       port=int(rabbit_nodes[r_numb][1])))
 
         logger_rb.info('using port {0}.'.format(rabbit_nodes[r_numb][1]))
+        conn_attempts = 0
         return connection
-    except (pika.exceptions.IncompatibleProtocolError,
-            pika.exceptions.ConnectionClosed):
-        time.sleep(5)
-        rabbit_connection()
+    else:
+        logger_rb.info('all nodes down.')
+        exit()
 
 
 def callback_creation(ch, method, properties, body):
@@ -99,26 +101,35 @@ def callback_reading(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-if __name__ == '__main__':
-    r_numb = 2
+def init():
+    global channel
+    try:
+        connection = rabbit_connection()
+        channel = connection.channel()
+        channel.exchange_declare(exchange='tornado', type='direct', durable=True)
 
+        channel.queue_declare(queue="creation", durable=True)
+        channel.queue_declare(queue="reading", durable=True)
+
+        channel.basic_qos(prefetch_count=1)  # count messages to a worker
+
+        channel.basic_consume(callback_creation, queue="creation")
+        channel.basic_consume(callback_reading, queue="reading")
+
+        channel.start_consuming()
+    except (pika.exceptions.IncompatibleProtocolError,
+            pika.exceptions.ConnectionClosed):
+        time.sleep(5)
+        init()
+
+if __name__ == '__main__':
     # loggers
     logger_cc = Logger('callback_creation').get()
     logger_cr = Logger('callback_reading').get()
-    logger_rb = Logger('rabbit port using').get()
+    logger_rb = Logger('Rabbit MQ').get()
 
     db = mongo_connection("local", "test")
 
-    connection = rabbit_connection()
-    channel = connection.channel()
-    channel.exchange_declare(exchange='tornado', type='direct', durable=True)
+    r_numb, conn_attempts = 0, 0
 
-    channel.queue_declare(queue="creation", durable=True)
-    channel.queue_declare(queue="reading", durable=True)
-
-    channel.basic_qos(prefetch_count=1)  # count messages to a worker
-
-    channel.basic_consume(callback_creation, queue="creation")
-    channel.basic_consume(callback_reading, queue="reading")
-
-    channel.start_consuming()
+    init()
