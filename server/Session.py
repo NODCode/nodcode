@@ -22,7 +22,8 @@ class Session(object):
         return self._get_session(uui)
 
     def set(self, uui):
-        self.logger.debug('Try to set new session: uuid {name}'.format(name=uui))
+        self.logger.debug('Try to set new session: '
+                          'uuid {name}'.format(name=uui))
         self.uui = uui
         self._set_session(uui,
                           str(datetime.datetime.now().time()))
