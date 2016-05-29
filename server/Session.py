@@ -1,11 +1,15 @@
 import cPickle as pickle
 import datetime
+import time
+import tornado.ioloop
 from rediscluster import StrictRedisCluster
 from Logger import Logger
 
 
 class Session(object):
-    uui = None
+    _uui = None
+    _max_retry = 5
+    _retry_num = 0
 
     def __init__(self, **options):
         self.options = {
@@ -13,24 +17,43 @@ class Session(object):
             'expire': 7200,
         }
         self.options.update(options)
+        self.connect()
+        self.logger = Logger('session').get()
+
+    def connect():
         self.redis = StrictRedisCluster(
             startup_nodes=self.options['startup_nodes'])
-        self.logger = Logger('session').get()
 
     def get(self, uui):
         self.logger.debug('Try to get session')
-        return self._get_session(uui)
+        func = lambda : self._get_session(uui)
+        return self._safe_way(func)
 
     def set(self, uui):
         self.logger.debug('Try to set new session: '
                           'uuid {name}'.format(name=uui))
-        self.uui = uui
-        self._set_session(uui,
-                          str(datetime.datetime.now().time()))
+        self._uui = uui
+        func = lambda : self._set_session(uui,
+                            str(datetime.datetime.now().time()))
+        self._safe_way(func)
+
+    def _safe_way(self, func):
+        try:
+            return func()
+        except:
+            if self._max_retry == self._retry_num:
+                self.logger.debug('Max try to reconnect. Closed')
+                tornado.ioloop.IOLoop.instance().stop()
+            else:
+                self._retry_num += 1
+                self.logger.debug('Fail to connect. Try to reconnect after 3 sec')
+                time.sleep(3)
+                self.connect()
+                return func()
 
     def delete(self):
         self.logger.debug('Try to delete session')
-        self.redis.delete(self._prefixed(self.uui))
+        self.redis.delete(self._prefixed(self._uui))
 
     def _prefixed(self, sid):
         return '%s:%s' % (self.options['key_prefix'], sid)
