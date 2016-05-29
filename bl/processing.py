@@ -7,30 +7,45 @@ import sys
 from Logger import Logger
 
 
-sys.setrecursionlimit(500)
+def mongo_connection(database, collection):
+    cfg_parser = ConfigParser.ConfigParser()
+    cfg_parser.read(sys.argv[1])
+    mongo_nodes = zip(cfg_parser.get('mongocluster', 'hosts').split(' '),
+                      cfg_parser.get('mongocluster', 'ports').split(' '))
 
-# loggers
-logger_cc = Logger('callback_creation').get()
-logger_cr = Logger('callback_reading').get()
-logger_rb = Logger('rabbit port using').get()
+    cfg = ''
+    for _ in mongo_nodes:
+        cfg = cfg + _[0] + ':'
+        cfg = cfg + _[1] + ','
+
+    cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001/?localThresholdMS=15'
+
+    client = pymongo.MongoClient(cfg, readPreference='primaryPreferred')
+    return client[database][collection]
 
 
-# pymongo connection from ..config/server_demonstrate.ini
-cfg_parser = ConfigParser.ConfigParser()
-cfg_parser.read(sys.argv[1])
-mongo_nodes = zip(cfg_parser.get('mongocluster', 'hosts').split(' '),
-                  cfg_parser.get('mongocluster', 'ports').split(' '))
+def rabbit_connection():
+    cfg_parser = ConfigParser.ConfigParser()
+    cfg_parser.read(sys.argv[1])
+    rabbit_nodes = zip(cfg_parser.get('rabbitmq', 'hosts').split(' '),
+                       cfg_parser.get('rabbitmq', 'ports').split(' '))
+    try:
+        global r_numb
+        r_numb += 1
+        r_numb %= 3
 
-cfg = ''
-for _ in mongo_nodes:
-    cfg = cfg + _[0] + ':'
-    cfg = cfg + _[1] + ','
+        logger_rb.info('try to use port {0}.'.format(rabbit_nodes[r_numb][1]))
 
-cfg = 'mongodb://' + cfg[:-1] + '/replicaSet=rs001/?localThresholdMS=15'
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(rabbit_nodes[r_numb][0],
+                                      port=int(rabbit_nodes[r_numb][1])))
 
-# pymongo settings
-client = pymongo.MongoClient(cfg, readPreference='primaryPreferred')
-db = client["local"]["test"]
+        logger_rb.info('using port {0}.'.format(rabbit_nodes[r_numb][1]))
+        return connection
+    except (pika.exceptions.IncompatibleProtocolError,
+            pika.exceptions.ConnectionClosed):
+        time.sleep(5)
+        rabbit_connection()
 
 
 def callback_creation(ch, method, properties, body):
@@ -84,45 +99,19 @@ def callback_reading(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-# TEST will be removed soon
-logger_ct = Logger('callback_test').get()
+if __name__ == '__main__':
+    r_numb = 2
 
+    # loggers
+    logger_cc = Logger('callback_creation').get()
+    logger_cr = Logger('callback_reading').get()
+    logger_rb = Logger('rabbit port using').get()
 
-def callback_test(ch, method, properties, body):
-    body = json.loads(body)
-    logger_ct.info('return {0}.'.format(body))
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    db = mongo_connection("local", "test")
 
-# TEST will be removed soon
-
-port_arr = [5672, 5673, 5674]
-port_number = 2
-
-
-def rabbit_connect():
-    try:
-        global port_number
-        port_number += 1
-        port_number %= 3
-
-        logger_rb.info('try to use port {0}.'.format(port_arr[port_number]))
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters("localhost", port=port_arr[port_number]))
-        logger_rb.info('using port {0}.'.format(port_arr[port_number]))
-        return connection
-    except (pika.exceptions.IncompatibleProtocolError,
-            pika.exceptions.ConnectionClosed):
-        time.sleep(5)
-        rabbit_connect()
-
-
-def init():
-    global channel
-
-    connection = rabbit_connect()
+    connection = rabbit_connection()
     channel = connection.channel()
-    channel.exchange_declare(exchange='tornado',
-                             type='direct', durable=True)
+    channel.exchange_declare(exchange='tornado', type='direct', durable=True)
 
     channel.queue_declare(queue="creation", durable=True)
     channel.queue_declare(queue="reading", durable=True)
@@ -132,12 +121,4 @@ def init():
     channel.basic_consume(callback_creation, queue="creation")
     channel.basic_consume(callback_reading, queue="reading")
 
-    # TEST will be removed soon
-    channel.queue_declare(queue="answer", durable=True)
-    channel.basic_consume(callback_test, queue="answer")
-    # TEST will be removed soon
     channel.start_consuming()
-
-
-if __name__ == '__main__':
-    init()
