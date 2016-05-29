@@ -22,7 +22,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.session_store = session_store
 
     def get_timestamp(self, uuid_key):
-        self.session_store.get(uuid_key)
+        return self.session_store.get(uuid_key)
 
     def set_timestamp(self, uuid_key):
         self.session_store.set(uuid_key)
@@ -60,6 +60,10 @@ class MainHandler(BaseHandler):
             self.timestamp = self.get_timestamp(uui)
             self.logger.debug('Getting shared '
                               'timestamp: %s' % str(self.timestamp))
+            if not self.timestamp:
+                self.logger.debug('Timestamp for uuid is not found, push it')
+                self.set_timestamp(uui)
+                self.timestamp = uui
         else:
             self.logger.debug('Add cookie')
             uui = str(uuid.uuid1())

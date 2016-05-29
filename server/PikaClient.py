@@ -8,6 +8,7 @@ import tornado.web
 from pika.adapters.tornado_connection import TornadoConnection
 from pika.exceptions import AMQPConnectionError
 
+
 class PikaClient(object):
     tornado_callback = None
     _closing = False
@@ -130,8 +131,8 @@ class PikaClient(object):
                           'body: {body}'.format(method=method,
                                                 header=header,
                                                 body=body))
-        self.messages.append(body)
         if self.tornado_callback and not self._one_respond_made:
+            self.messages.append(body)
             self.tornado_callback(self.get_messages())
             self._one_respond_made = True
 
