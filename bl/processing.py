@@ -106,7 +106,8 @@ def init():
     try:
         connection = rabbit_connection()
         channel = connection.channel()
-        channel.exchange_declare(exchange='tornado', type='direct', durable=True)
+        channel.exchange_declare(exchange='tornado',
+                                 type='direct', durable=True)
 
         channel.queue_declare(queue="creation", durable=True)
         channel.queue_declare(queue="reading", durable=True)
