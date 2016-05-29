@@ -12,8 +12,11 @@ class PikaClient(object):
     _closing = False
     _connect_index = 0
     _connect_pull = None
+    _one_respond_made = None
 
-    def __init__(self, logger, queue_name, queue_read, queue_create):
+    def __init__(self, logger,
+                 queue_name, queue_read, queue_create,
+                 node_list):
         # Construct a queue name we'll use for this instance only
         self.queue_name = queue_name
 
@@ -32,19 +35,11 @@ class PikaClient(object):
         # A place for us to put pending messages while we're waiting to connect
         self.pending = list()
 
-        # TODO: read from config
-        # self.credentials = pika.PlainCredentials('guest', 'guest')
-        # self.host = 'localhost'
-        # self.port = 5672
-        # self.virtual_host = '/'
-
-        # TODO: for demonstration purposes
-        self.host = 'localhost'
-        main = pika.ConnectionParameters(host=self.host, port=5672)
-        repl1 = pika.ConnectionParameters(host=self.host, port=7001)
-        repl2 = pika.ConnectionParameters(host=self.host, port=7002)
-
-        self._connect_pull = [main, repl1, repl2]
+        self._connect_pull = []
+        for node in node_list:
+            self._connect_pull.append(
+                pika.ConnectionParameters(
+                    host=node[0], port=int(node[1])))
 
     def connect(self):
         if self.connecting:
@@ -56,15 +51,17 @@ class PikaClient(object):
                                                  port=param.port))
         self.connecting = True
         try:
-            self.connection = TornadoConnection(param,
-                                                on_open_callback=self.on_connected)
+            self.connection = TornadoConnection(
+                param,
+                on_open_callback=self.on_connected
+            )
             self.connection.add_on_close_callback(self.on_closed)
         except:
             self.reconnect()
 
     def on_connected(self, connection):
-        self.logger.debug('Connected to RabbitMQ on '
-                          '{host}'.format(host=self.host))
+        self.logger.debug('Connected to RabbitMQ on: '
+                          '{connection}'.format(connection=connection))
         self.connected = True
         self.connection = connection
         self.connection.channel(self.on_channel_open)
@@ -113,15 +110,15 @@ class PikaClient(object):
                                    no_ack=True)
 
         # TODO: still not implemented
-        # self.logger.debug('Pending Messages')
-        for properties, body in self.pending:
-            self.logger.debug('Pending Message: %s | %s' % (properties, body))
-            self.channel.basic_publish(exchange='tornado',
-                                       # TODO: save routing_key or
-                                       # it already in properties
-                                       routing_key='reading',
-                                       body=body,
-                                       properties=properties)
+        # for properties, body in self.pending:
+        #     self.logger.debug('Pending Message:'
+        #                       ' %s | %s' % (properties, body))
+        #     self.channel.basic_publish(exchange='tornado',
+        #                                # TODO: save routing_key or
+        #                                # it already in properties
+        #                                routing_key='reading',
+        #                                body=body,
+        #                                properties=properties)
 
     def on_pika_message(self, channel, method, header, body):
         self.logger.debug('Message receive: '
@@ -129,30 +126,29 @@ class PikaClient(object):
                                                 header=header,
                                                 body=body))
         self.messages.append(body)
-        if self.tornado_callback:
+        if self.tornado_callback and not self._one_respond_made:
             self.tornado_callback(self.get_messages())
+            self._one_respond_made = True
 
     def on_basic_cancel(self, frame):
         self.logger.debug('Basic Cancel Ok')
         self.connection.close()
 
     def on_closed(self, *args):
-        self.logger.warning('kwargs:' + str(args))
         self.logger.warning('On closed. Try to reconnect...')
         self.reconnect()
 
     def reconnect(self):
         self.connecting = False
         self.connected = False
-        self.logger.warning('Some waiting...')
-        # some sleep for demonstration purposes
-        # TODO: masg like 'Start reconnect after 3...2...1..'
-        time.sleep(4)
+        self.logger.warning('5 sec waiting...')
+        time.sleep(5)
         self.logger.warning('Start reconnect')
         if not self._closing:
-            self._connect_index = (self._connect_index + 1) % len(self._connect_pull)
-            self.logger.warning('Reconnect to %s' %
-                self._connect_pull[self._connect_index])
+            self._connect_index = ((self._connect_index + 1) %
+                                   len(self._connect_pull))
+            self.logger.warning('Try to reconnect to %s' %
+                                self._connect_pull[self._connect_index])
             self.connect()
         else:
             self.logger.warning('Closing. Stop trying')
@@ -166,6 +162,8 @@ class PikaClient(object):
         self.logger.debug('Sample Message to %s' % routing_key)
         self.tornado_callback = tornado_callback
         properties = pika.BasicProperties(delivery_mode=1)
+
+        self._one_respond_made = False
         self.channel.basic_publish(exchange='tornado',
                                    routing_key=routing_key,
                                    body=msg,
