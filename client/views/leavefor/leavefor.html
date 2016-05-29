@@ -1,0 +1,10 @@
+<div ng-controller="leaveforPageController" class = "common">
+<h4><b>Leave message for {{username}}</b></h4> 
+<br>
+<textarea class="form-control" ng-model="message" rows="5"></textarea> 
+<br>
+<div class="error">{{status}}</div>
+<br>
+<button class="btn btn-primary send-msg" ng-click="sendMessage()">Leave message</button>
+<button class="btn btn-primary" ng-click="logOut()">Log out</button>
+</div>
