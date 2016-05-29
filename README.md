@@ -5,6 +5,7 @@ File structure:
 | item      | description                 |
 | --------- | --------------------------- |
 | client/   | all frontend code           |
+| config/   | demo configuration         |
 | docs/     | images and others for wiki |
 | server/   | server modules code         |
 | redis/    | scripts for running redis   |
