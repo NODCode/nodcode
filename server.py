@@ -16,6 +16,7 @@ from server.Session import Session
 
 
 class BaseHandler(tornado.web.RequestHandler):
+    timestamp = None
 
     def initialize(self, session_store):
         self.session_store = session_store
@@ -28,10 +29,9 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def write_json(self, msg):
         self.logger.debug('Add timestamp: %s' % str(self.timestamp))
-        self.logger.debug('Get mesage for responsing: %s' % msg)
-        # = self.timestamp
+        self.logger.debug('Get mesage: %s' % msg)
         messages = json.dumps(msg)
-        self.logger.debug('Messages for writing: %s' % str(messages))
+        self.logger.debug('Message will be wrire: %s' % str(messages))
         self.set_header("Content-type", "application/json")
         self.write(messages)
         self.finish()
@@ -47,12 +47,12 @@ class MainHandler(BaseHandler):
 
     @tornado.web.asynchronous
     def get(self):
-        self.render('client/src/index.html')
+        self.render('client/index.html')
 
     @tornado.web.asynchronous
     def post(self):
         self.logger.debug('New POST request incoming')
-        # For web client + Cookie
+
         if self.get_secure_cookie('user'):
             self.logger.debug('Cookie already exists')
             uui = self.get_secure_cookie('user')
@@ -124,7 +124,7 @@ def main():
     logger_web.info('Redis has config: {0}'.format(startup_nodes))
     session_store = Session(startup_nodes=startup_nodes)
 
-    public_root = os.path.join(os.path.dirname(__file__), 'client/src')
+    public_root = os.path.join(os.path.dirname(__file__), 'client')
     application = tornado.web.Application(
         [(r'/', MainHandler, dict(session_store=session_store,
                                   logger=logger_web,
