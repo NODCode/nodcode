@@ -11,8 +11,14 @@
             $scope.status = "";
             if ($scope.message != "" && $scope.message != undefined) {
                 var resp = nodService.sendMessage($scope.username,$scope.message);
-                console.log(resp);
-                alert(resp);
+                resp.then(
+        	          function(data) {
+                        alert(JSON.parse(data.data).response);
+        	          },
+        	          function(errorData) {
+                        console.log("resp:", errorData);
+                        alert("something was wrong:(");
+        	          });
                 $scope.message = "";
             }
             else {
@@ -23,9 +29,16 @@
     })
        .controller('messagesPageController', function($scope, $http, mainService, $state, $cookies, nodService) {
         $scope.username = $cookies.get('username');
-        var data = nodService.getMessage($scope.username);
-        console.log(data);
-        $scope.message = data;
+        var resp = nodService.getMessage($scope.username);
+        resp.then(
+	          function(data) {
+                $scope.message = JSON.parse(data.data).content;
+	          },
+	          function(errorData) {
+                console.log("resp:", errorData);
+                $scope.message="something was wrong:(";
+	          });
+
         $scope.logOut = function() {
             $state.go('home');
             mainService.logOut();

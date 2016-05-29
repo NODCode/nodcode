@@ -18,7 +18,7 @@
                         options)
                     .then(function(data) {
                         deferred.resolve(data);
-                        console.log("OK SEND", data);
+                        console.log("OK SEND", data.data);
                     }, function(err) {
                         console.log("err SEND", err);
                         // deferred.reject();
@@ -40,8 +40,6 @@
                                         console.log("err SEND", err);
                                         deferred.reject();
 
-                                        alert("WITHOUT CHANCE TO CONNECT TO SERVER");
-
                                     });
 
                             });
@@ -59,7 +57,7 @@
                         options)
                     .then(function(data) {
                         deferred.resolve(data);
-                        console.log("OK GET", data);
+                        console.log("OK GET", JSON.parse(data.data[0]).content);
                     }, function(err) {
                         console.log("err GET", err);
 
@@ -81,7 +79,6 @@
                                     }, function(err) {
                                         console.log("err GET", err);
                                         deferred.reject();
-                                        alert("WITHOUT CHANCE TO CONNECT TO SERVER");
                                     });
                             });
                     });
