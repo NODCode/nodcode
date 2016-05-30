@@ -28,16 +28,20 @@ class Session(object):
 
     def get(self, uui):
         self.logger.debug('Try to get session')
-        func = lambda : self._get_session(uui)
-        return self._safe_way(func)
+
+        def _get():
+            return self._get_session(uui)
+        return self._safe_way(_get)
 
     def set(self, uui):
         self.logger.debug('Try to set new session: '
                           'uuid {name}'.format(name=uui))
         self._uui = uui
-        func = lambda : self._set_session(uui,
-                            str(datetime.datetime.now().time()))
-        self._safe_way(func)
+
+        def _set():
+            self._set_session(uui,
+                              str(datetime.datetime.now().time()))
+        self._safe_way(_set)
 
     def _safe_way(self, func):
         try:
@@ -48,8 +52,9 @@ class Session(object):
                 tornado.ioloop.IOLoop.instance().stop()
             else:
                 self._retry_num += 1
-                self.logger.debug('Fail to connect. Try to reconnect after 3 sec')
-                time.sleep(3)
+                self.logger.debug('Fail to connect.'
+                                  'Try to reconnect after 6 sec')
+                time.sleep(6)
                 self.connect()
                 return func()
 

@@ -1,5 +1,4 @@
 from server.Session import Session
-import uuid
 import time
 import random
 
@@ -10,7 +9,7 @@ session_store = Session(startup_nodes=startup_nodes)
 
 i = 0
 while True:
-    time.sleep(random.randint(1,10))
+    time.sleep(random.randint(1, 10))
     print("Starting...")
     uui = "test_info" + str(i)
     i += 1
