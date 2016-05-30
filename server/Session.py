@@ -17,8 +17,8 @@ class Session(object):
             'expire': 7200,
         }
         self.options.update(options)
-        self.connect()
         self.logger = Logger('session').get()
+        self.connect()
 
     def connect(self):
         def func():
