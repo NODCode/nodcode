@@ -28,10 +28,10 @@ class BaseHandler(tornado.web.RequestHandler):
         self.session_store.set(uuid_key)
 
     def write_json(self, msg):
-        self.logger.debug('Add timestamp: %s' % str(self.timestamp))
+        self.logger.debug('Add timestamp: %s' % self.timestamp)
         self.logger.debug('Get mesage: %s' % msg)
-        messages = json.dumps(msg)
-        self.logger.debug('Message will be wrire: %s' % str(messages))
+        messages = json.dumps(msg[0])
+        self.logger.debug('Message will be write: %s' % messages)
         self.set_header("Content-type", "application/json")
         self.write(messages)
         self.finish()
@@ -39,9 +39,11 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class MainHandler(BaseHandler):
 
-    def initialize(self, session_store, logger, queue_read, queue_create):
+    def initialize(self, session_store, logger,
+                   queue_answer, queue_read, queue_create):
         super(MainHandler, self).initialize(session_store)
         self.logger = logger
+        self.queue_answer = queue_answer
         self.queue_read = queue_read
         self.queue_create = queue_create
 
@@ -85,14 +87,16 @@ class MainHandler(BaseHandler):
         elif not message:
             # read a message
             msg = {
-                'id': user_id
+                'id': user_id,
+                'server': self.queue_answer
             }
             routing = self.queue_read
         else:
             # add a message
             msg = {
                 'id': user_id,
-                'content': message
+                'content': message,
+                'server': self.queue_answer
             }
             routing = self.queue_create
 
@@ -106,7 +110,7 @@ def main():
     config_file = sys.argv[2]
 
     # queue for waiting answer from rabbit
-    queue_waiting = 'answer'
+    queue_answer = 'answer-%s' % port
 
     # queues for sending create/read messages
     queue_read = 'reading'
@@ -132,6 +136,7 @@ def main():
     application = tornado.web.Application(
         [(r'/', MainHandler, dict(session_store=session_store,
                                   logger=logger_web,
+                                  queue_answer=queue_answer,
                                   queue_read=queue_read,
                                   queue_create=queue_create)),
          (r'/(.*)', tornado.web.StaticFileHandler, {'path': public_root})],
@@ -141,7 +146,7 @@ def main():
 
     logger_pika = Logger('tornado-%s-pika' % port).get()
     pc = PikaClient(logger=logger_pika,
-                    queue_name=queue_waiting,
+                    queue_answer=queue_answer,
                     queue_read=queue_read,
                     queue_create=queue_create,
                     node_list=rabbit_nodes)

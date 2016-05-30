@@ -20,10 +20,10 @@ class PikaClient(object):
     _last_reconnect_fail = None
 
     def __init__(self, logger,
-                 queue_name, queue_read, queue_create,
+                 queue_answer, queue_read, queue_create,
                  node_list):
         # Construct a queue name we'll use for this instance only
-        self.queue_name = queue_name
+        self.queue_answer = queue_answer
 
         # Create queue for sending
         self.queue_read = queue_read
@@ -76,13 +76,13 @@ class PikaClient(object):
         self.logger.debug('Channel Open, Declaring Exchange')
         self.channel = channel
         self.channel.exchange_declare(exchange='tornado',
-                                      type='direct',
+                                      type='topic',
                                       durable=True,
                                       callback=self.on_exchange_declared)
 
     def on_exchange_declared(self, frame):
         self.logger.debug('Exchange Declared, Declaring Queue')
-        self.channel.queue_declare(queue=self.queue_name,
+        self.channel.queue_declare(queue=self.queue_answer,
                                    durable=True,
                                    callback=self.on_queue_declared)
         self.channel.queue_declare(queue=self.queue_create,
@@ -105,14 +105,13 @@ class PikaClient(object):
     def on_queue_declared(self, frame):
         self.logger.debug('Queue Declared, Binding Queue')
         self.channel.queue_bind(exchange='tornado',
-                                queue=self.queue_name,
-                                routing_key='answer',
+                                queue=self.queue_answer,
                                 callback=self.on_queue_bound)
 
     def on_queue_bound(self, frame):
         self.logger.debug('Queue Bound, Issuing Basic Consume')
         self.channel.basic_consume(consumer_callback=self.on_pika_message,
-                                   queue=self.queue_name,
+                                   queue=self.queue_answer,
                                    no_ack=True)
 
         # TODO: still not implemented

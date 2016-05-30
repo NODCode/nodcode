@@ -69,7 +69,7 @@ def callback_creation(ch, method, properties, body):
             answer = {"status": 500, "response": "Something has gone wrong"}
     logger_cc.info('return {0}.'.format(answer))
     channel.basic_publish(exchange="tornado",
-                          routing_key="answer",
+                          routing_key=body["server"],
                           body=json.dumps(answer),
                           properties=pika.BasicProperties(delivery_mode=2,))
     ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -95,7 +95,7 @@ def callback_reading(ch, method, properties, body):
         answer = {"status": 200, "content": answer["content"]}
     logger_cr.info('return {0}.'.format(answer))
     channel.basic_publish(exchange="tornado",
-                          routing_key="answer",
+                          routing_key=body["server"],
                           body=json.dumps(answer),
                           properties=pika.BasicProperties(delivery_mode=2,))
     ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -107,7 +107,7 @@ def init():
         connection = rabbit_connection()
         channel = connection.channel()
         channel.exchange_declare(exchange='tornado',
-                                 type='direct', durable=True)
+                                 type='topic', durable=True)
 
         channel.queue_declare(queue="creation", durable=True)
         channel.queue_declare(queue="reading", durable=True)
