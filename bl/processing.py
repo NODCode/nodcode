@@ -58,7 +58,8 @@ def callback_creation(ch, method, properties, body):
     else:
         try:
             if db.find_one({"id": body["id"]}) is None:
-                db.insert_one(body)
+                db.insert_one({"id": body["id"],
+                               "content": body["content"]})
             else:
                 db.update_one({"id": body["id"]},
                               {"$set": {"content": body["content"]}})
@@ -82,7 +83,7 @@ def callback_reading(ch, method, properties, body):
         answer = {"status": 400, "response": "Id was missing"}
     else:
         try:
-            answer = db.find_one(body)
+            answer = db.find_one({'id': body['id']})
         except (pymongo.errors.ServerSelectionTimeoutError,
                 pymongo.errors.NetworkTimeout,
                 pymongo.errors.AutoReconnect):

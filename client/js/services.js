@@ -6,7 +6,9 @@
         }])
         .factory('nodService', function($http, $q, $httpParamSerializer) {
             var nod = {};
-            var url = ['http://localhost:8080/', 'http://localhost:8070/', 'http://localhost:8060/'];
+            var url = ['http://localhost:8070/',
+                       'http://localhost:8060/',
+                       'http://localhost:8090/'];
             var options = {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             };

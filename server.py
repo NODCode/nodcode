@@ -30,7 +30,7 @@ class BaseHandler(tornado.web.RequestHandler):
     def write_json(self, msg):
         self.logger.debug('Add timestamp: %s' % self.timestamp)
         self.logger.debug('Get mesage: %s' % msg)
-        messages = json.dumps(msg[0])
+        messages = json.dumps(msg)
         self.logger.debug('Message will be write: %s' % messages)
         self.set_header("Content-type", "application/json")
         self.set_header("Access-Control-Allow-Origin", "*")
