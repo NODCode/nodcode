@@ -33,6 +33,9 @@ class BaseHandler(tornado.web.RequestHandler):
         messages = json.dumps(msg[0])
         self.logger.debug('Message will be write: %s' % messages)
         self.set_header("Content-type", "application/json")
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Headers", "Origin, Content-Type")
+        self.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.write(messages)
         self.finish()
 
