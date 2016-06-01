@@ -10,15 +10,19 @@
         $scope.sendMessage = function() {
             $scope.status = "";
             if ($scope.message != "" && $scope.message != undefined) {
-                var resp = nodService.sendMessage($scope.username,$scope.message);
-                resp.then(
-        	          function(data) {
+                var respPromise = nodService.sendMessage($scope.username,
+                                                         $scope.message);
+                console.log("Getting promise", respPromise);
+                respPromise.then(
+                    function(data) {
+                        console.log("resp ok", data);
                         alert(JSON.parse(data.data).response);
-        	          },
-        	          function(errorData) {
-                        console.log("resp:", errorData);
-                        alert("something was wrong:(");
-        	          });
+                    },
+                    function(err) {
+                        console.log("resp err", err);
+                        alert("Something was wrong");
+                    }
+                );
                 $scope.message = "";
             }
             else {
